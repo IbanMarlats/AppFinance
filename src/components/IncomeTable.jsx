@@ -255,6 +255,67 @@ export default function IncomeTable() {
                 </table>
             </div>
 
+            {/* Jauges Seuils */}
+            <div style={{ marginBottom: '2rem', display: 'grid', gap: '1rem' }}>
+                {/* Jauge Franchise TVA */}
+                <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9em', color: 'var(--text-muted)' }}>
+                        <span>Franchise TVA (Seuil: {TVA_THRESHOLD.toLocaleString()}€)</span>
+                        <span style={{ fontWeight: 'bold', color: tvaColor }}>
+                            {totals.gross.toFixed(2)}€ ({((totals.gross / TVA_THRESHOLD) * 100).toFixed(1)}%)
+                        </span>
+                    </div>
+                    <div style={{
+                        backgroundColor: '#e5e7eb',
+                        borderRadius: '9999px',
+                        height: '0.75rem',
+                        width: '100%',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{
+                            backgroundColor: tvaColor,
+                            height: '100%',
+                            width: `${tvaProgress}%`,
+                            transition: 'width 0.5s ease-in-out'
+                        }} />
+                    </div>
+                    {tvaProgress >= 100 && (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.85em', color: 'var(--danger)', fontWeight: 'bold' }}>
+                            ⚠️ Seuil TVA dépassé
+                        </div>
+                    )}
+                </div>
+
+                {/* Jauge Plafond Micro */}
+                <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9em', color: 'var(--text-muted)' }}>
+                        <span>Plafond Micro-Entreprise (Seuil: {MICRO_THRESHOLD.toLocaleString()}€)</span>
+                        <span style={{ fontWeight: 'bold', color: microColor }}>
+                            {totals.gross.toFixed(2)}€ ({((totals.gross / MICRO_THRESHOLD) * 100).toFixed(1)}%)
+                        </span>
+                    </div>
+                    <div style={{
+                        backgroundColor: '#e5e7eb',
+                        borderRadius: '9999px',
+                        height: '0.75rem',
+                        width: '100%',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{
+                            backgroundColor: microColor,
+                            height: '100%',
+                            width: `${microProgress}%`,
+                            transition: 'width 0.5s ease-in-out'
+                        }} />
+                    </div>
+                    {microProgress >= 100 && (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.85em', color: 'var(--danger)', fontWeight: 'bold' }}>
+                            ⚠️ Seuil Micro dépassé : Passage en Société requis (si 2 ans consécutifs)
+                        </div>
+                    )}
+                </div>
+            </div>
+
             <ConfirmationModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
