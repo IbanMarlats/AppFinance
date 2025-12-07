@@ -73,49 +73,51 @@ export default function PlatformManager() {
                 <button type="submit" className="primary btn-action">Ajouter</button>
             </form>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nom</th>
-                        <th>Frais Plateforme</th>
-                        <th style={{ textAlign: 'right' }}>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {platforms.map(p => {
-                        const isEditing = editingId === p.id;
+            <div className="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Frais Plateforme</th>
+                            <th style={{ textAlign: 'right' }}>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {platforms.map(p => {
+                            const isEditing = editingId === p.id;
 
-                        if (isEditing) {
+                            if (isEditing) {
+                                return (
+                                    <tr key={p.id} style={{ backgroundColor: '#f8fafc' }}>
+                                        <td><input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></td>
+                                        <td><input type="number" step="0.01" value={editForm.taxRate} onChange={e => setEditForm({ ...editForm, taxRate: e.target.value })} /></td>
+                                        <td className="action-cell">
+                                            <button className="primary btn-action btn-icon" onClick={saveEdit}>V</button>
+                                            <button className="btn-action btn-icon" onClick={cancelEdit}>X</button>
+                                        </td>
+                                    </tr>
+                                );
+                            }
+
                             return (
-                                <tr key={p.id} style={{ backgroundColor: '#f8fafc' }}>
-                                    <td><input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></td>
-                                    <td><input type="number" step="0.01" value={editForm.taxRate} onChange={e => setEditForm({ ...editForm, taxRate: e.target.value })} /></td>
+                                <tr key={p.id}>
+                                    <td>{p.name}</td>
+                                    <td>{p.taxRate}%</td>
                                     <td className="action-cell">
-                                        <button className="primary btn-action btn-icon" onClick={saveEdit}>V</button>
-                                        <button className="btn-action btn-icon" onClick={cancelEdit}>X</button>
+                                        <button className="btn-action btn-icon" onClick={() => startEdit(p)} title="Modifier">✎</button>
+                                        <button className="danger btn-action btn-icon" onClick={() => handleDelete(p.id)} title="Supprimer">X</button>
                                     </td>
                                 </tr>
                             );
-                        }
-
-                        return (
-                            <tr key={p.id}>
-                                <td>{p.name}</td>
-                                <td>{p.taxRate}%</td>
-                                <td className="action-cell">
-                                    <button className="btn-action btn-icon" onClick={() => startEdit(p)} title="Modifier">✎</button>
-                                    <button className="danger btn-action btn-icon" onClick={() => handleDelete(p.id)} title="Supprimer">X</button>
-                                </td>
+                        })}
+                        {platforms.length === 0 && (
+                            <tr>
+                                <td colSpan="3" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Aucune plateforme configurée</td>
                             </tr>
-                        );
-                    })}
-                    {platforms.length === 0 && (
-                        <tr>
-                            <td colSpan="3" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Aucune plateforme configurée</td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
+                        )}
+                    </tbody>
+                </table>
+            </div>
 
             <ConfirmationModal
                 isOpen={isModalOpen}

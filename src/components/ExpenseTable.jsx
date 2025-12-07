@@ -3,10 +3,12 @@ import { useFinance } from '../context/FinanceContext';
 import ConfirmationModal from './ConfirmationModal';
 
 export default function ExpenseTable() {
-    const { expenses, addExpense, deleteExpense, updateExpense } = useFinance();
+    const { expenses, addExpense, deleteExpense, updateExpense, categories } = useFinance();
     const [desc, setDesc] = useState('');
     const [amount, setAmount] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [category, setCategory] = useState('');
+    const [isRecurring, setIsRecurring] = useState(false);
 
     const [editingId, setEditingId] = useState(null);
     const [editForm, setEditForm] = useState({});
@@ -18,9 +20,11 @@ export default function ExpenseTable() {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!desc || !amount) return;
-        addExpense({ name: desc, amount: parseFloat(amount), date });
+        addExpense({ name: desc, amount: parseFloat(amount), date, category, is_recurring: isRecurring });
         setDesc('');
         setAmount('');
+        setCategory('');
+        setIsRecurring(false);
     };
 
     const handleDelete = (id) => {
@@ -65,12 +69,16 @@ export default function ExpenseTable() {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid" style={{ gridTemplateColumns: '150px 1fr 150px auto', marginBottom: '2rem' }}>
+            <form onSubmit={handleSubmit} className="grid" style={{ gridTemplateColumns: '130px 140px 1fr 100px auto auto', gap: '0.5rem', marginBottom: '2rem', alignItems: 'center' }}>
                 <input
                     type="date"
                     value={date}
                     onChange={e => setDate(e.target.value)}
                 />
+                <select value={category} onChange={e => setCategory(e.target.value)}>
+                    <option value="">Catégorie...</option>
+                    {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
                 <input
                     placeholder="Description"
                     value={desc}
@@ -83,64 +91,91 @@ export default function ExpenseTable() {
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                 />
+                <label className="flex items-center space-x-2 cursor-pointer" title="Dépense Récurrente">
+                    <input
+                        type="checkbox"
+                        checked={isRecurring}
+                        onChange={e => setIsRecurring(e.target.checked)}
+                    />
+                    <span style={{ fontSize: '0.8em', color: 'var(--text-muted)' }}>Mensuel</span>
+                </label>
                 <button type="submit" className="primary btn-action">Ajouter</button>
             </form>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Description</th>
-                        <th>Montant</th>
-                        <th style={{ textAlign: 'right' }}>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {expenses.sort((a, b) => new Date(b.date) - new Date(a.date)).map(e => {
-                        const isEditing = editingId === e.id;
+            <div className="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Catégorie</th>
+                            <th>Description</th>
+                            <th>Montant</th>
+                            <th style={{ textAlign: 'right' }}>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {expenses.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).map(e => {
+                            const isEditing = editingId === e.id;
 
-                        if (isEditing) {
+                            if (isEditing) {
+                                return (
+                                    <tr key={e.id} style={{ backgroundColor: '#f8fafc' }}>
+                                        <td><input type="date" value={editForm.date} onChange={ev => setEditForm({ ...editForm, date: ev.target.value })} /></td>
+                                        <td>
+                                            <select value={editForm.category || ''} onChange={ev => setEditForm({ ...editForm, category: ev.target.value })}>
+                                                <option value="">-</option>
+                                                {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                                            </select>
+                                        </td>
+                                        <td><input value={editForm.name} onChange={ev => setEditForm({ ...editForm, name: ev.target.value })} /></td>
+                                        <td><input type="number" step="0.01" value={editForm.amount} onChange={ev => setEditForm({ ...editForm, amount: ev.target.value })} /></td>
+                                        <td className="action-cell">
+                                            <button className="primary btn-action btn-icon" onClick={saveEdit}>V</button>
+                                            <button className="btn-action btn-icon" onClick={cancelEdit}>X</button>
+                                        </td>
+                                    </tr>
+                                );
+                            }
+
                             return (
-                                <tr key={e.id} style={{ backgroundColor: '#f8fafc' }}>
-                                    <td><input type="date" value={editForm.date} onChange={ev => setEditForm({ ...editForm, date: ev.target.value })} /></td>
-                                    <td><input value={editForm.name} onChange={ev => setEditForm({ ...editForm, name: ev.target.value })} /></td>
-                                    <td><input type="number" step="0.01" value={editForm.amount} onChange={ev => setEditForm({ ...editForm, amount: ev.target.value })} /></td>
+                                <tr key={e.id}>
+                                    <td>{new Date(e.date).toLocaleDateString()}</td>
+                                    <td>
+                                        <span className="badge" style={{
+                                            fontSize: '0.8em',
+                                            backgroundColor: categories.find(c => c.name === e.category)?.color || '#f3f4f6',
+                                            color: categories.find(c => c.name === e.category) ? '#fff' : '#374151'
+                                        }}>
+                                            {e.category || 'Autre'}
+                                        </span>
+                                        {e.is_recurring ? <span title="Récurrent" style={{ marginLeft: '5px' }}>🔄</span> : null}
+                                    </td>
+                                    <td>{e.name}</td>
+                                    <td style={{ color: 'var(--text-main)' }}>{e.amount.toFixed(2)}€</td>
                                     <td className="action-cell">
-                                        <button className="primary btn-action btn-icon" onClick={saveEdit}>V</button>
-                                        <button className="btn-action btn-icon" onClick={cancelEdit}>X</button>
+                                        <button className="btn-action btn-icon" onClick={() => startEdit(e)} title="Modifier">✎</button>
+                                        <button className="danger btn-action btn-icon" onClick={() => handleDelete(e.id)} title="Supprimer">X</button>
                                     </td>
                                 </tr>
                             );
-                        }
-
-                        return (
-                            <tr key={e.id}>
-                                <td>{new Date(e.date).toLocaleDateString()}</td>
-                                <td>{e.name}</td>
-                                <td style={{ color: 'var(--text-main)' }}>{e.amount.toFixed(2)}€</td>
-                                <td className="action-cell">
-                                    <button className="btn-action btn-icon" onClick={() => startEdit(e)} title="Modifier">✎</button>
-                                    <button className="danger btn-action btn-icon" onClick={() => handleDelete(e.id)} title="Supprimer">X</button>
-                                </td>
+                        })}
+                        {expenses.length === 0 && (
+                            <tr>
+                                <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Aucune dépense enregistrée</td>
                             </tr>
-                        );
-                    })}
-                    {expenses.length === 0 && (
-                        <tr>
-                            <td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Aucune dépense enregistrée</td>
-                        </tr>
+                        )}
+                    </tbody>
+                    {expenses.length > 0 && (
+                        <tfoot>
+                            <tr style={{ fontWeight: 'bold', backgroundColor: '#f9fafb' }}>
+                                <td colSpan="3">Total</td>
+                                <td style={{ color: 'var(--danger)' }}>{total.toFixed(2)}€</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
                     )}
-                </tbody>
-                {expenses.length > 0 && (
-                    <tfoot>
-                        <tr style={{ fontWeight: 'bold', backgroundColor: '#f9fafb' }}>
-                            <td colSpan="2">Total</td>
-                            <td style={{ color: 'var(--danger)' }}>{total.toFixed(2)}€</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                )}
-            </table>
+                </table>
+            </div>
 
             <ConfirmationModal
                 isOpen={isModalOpen}

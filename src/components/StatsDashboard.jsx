@@ -1,4 +1,5 @@
 import { useFinance } from '../context/FinanceContext';
+import ExpenseStats from './ExpenseStats';
 
 export default function StatsDashboard() {
     const { incomes, expenses, platforms } = useFinance();
@@ -11,17 +12,18 @@ export default function StatsDashboard() {
         const net1 = gross - fee;
         const urssaf = net1 * 0.25;
         const final = net1 - urssaf;
-        return { gross, final };
+        return { gross, net1, final };
     };
 
     // 1. By Platform
     const byPlatform = incomes.reduce((acc, curr) => {
         const pId = curr.platformId;
         const pName = platforms.find(p => p.id === pId)?.name || 'Inconnu';
-        if (!acc[pId]) acc[pId] = { name: pName, gross: 0, final: 0 };
+        if (!acc[pId]) acc[pId] = { name: pName, gross: 0, net1: 0, final: 0 };
 
-        const { gross, final } = calculate(curr);
+        const { gross, net1, final } = calculate(curr);
         acc[pId].gross += gross;
+        acc[pId].net1 += net1;
         acc[pId].final += final;
         return acc;
     }, {});
@@ -77,60 +79,104 @@ export default function StatsDashboard() {
                 </div>
             </div>
 
+            {/* Recurring Expenses Table */}
+            <div className="card" style={{ marginBottom: '2rem' }}>
+                <div className="flex justify-between" style={{ marginBottom: '1rem' }}>
+                    <h2>Dépenses Mensuelles (Fixes)</h2>
+                    <div className="badge" style={{ fontSize: '1.2em', padding: '0.5em 1em', backgroundColor: '#fef2f2', border: '1px solid #fecaca' }}>
+                        Total: <span style={{ color: 'var(--danger)' }}>
+                            {expenses.filter(e => e.is_recurring).reduce((acc, curr) => acc + curr.amount, 0).toFixed(2)}€
+                        </span>
+                    </div>
+                </div>
+                <div className="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Catégorie</th>
+                                <th>Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {expenses.filter(e => e.is_recurring).map(e => (
+                                <tr key={e.id}>
+                                    <td>{e.name}</td>
+                                    <td><span className="badge">{e.category || 'Autre'}</span></td>
+                                    <td style={{ color: 'var(--danger)' }}>{e.amount.toFixed(2)}€</td>
+                                </tr>
+                            ))}
+                            {expenses.filter(e => e.is_recurring).length === 0 && (
+                                <tr><td colSpan="3" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Aucune charge fixe définie</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Expense Stats by Category */}
+            <ExpenseStats />
+
             <div className="card">
                 <h2>Bilan par Mois</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Mois</th>
-                            <th>Recettes (Net)</th>
-                            <th>Dépenses</th>
-                            <th>Bénéfice / Déficit</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {Object.entries(statsByMonth).sort().reverse().map(([month, item]) => {
-                            const [y, m] = month.split('-');
-                            const dateObj = new Date(parseInt(y), parseInt(m) - 1);
-                            const displayDate = dateObj.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-                            const capitalizedDate = displayDate.charAt(0).toUpperCase() + displayDate.slice(1);
+                <div className="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mois</th>
+                                <th>Recettes (Net)</th>
+                                <th>Dépenses</th>
+                                <th>Bénéfice / Déficit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Object.entries(statsByMonth).sort().reverse().map(([month, item]) => {
+                                const [y, m] = month.split('-');
+                                const dateObj = new Date(parseInt(y), parseInt(m) - 1);
+                                const displayDate = dateObj.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+                                const capitalizedDate = displayDate.charAt(0).toUpperCase() + displayDate.slice(1);
 
-                            return (
-                                <tr key={month}>
-                                    <td style={{ fontWeight: '500' }}>{capitalizedDate}</td>
-                                    <td style={{ color: 'var(--success)' }}>+{item.income.toFixed(2)}€</td>
-                                    <td style={{ color: 'var(--danger)' }}>-{item.expense.toFixed(2)}€</td>
-                                    <td style={{ fontWeight: 'bold', color: item.profit >= 0 ? '#3b82f6' : 'var(--danger)' }}>
-                                        {item.profit > 0 ? '+' : ''}{item.profit.toFixed(2)}€
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                        {Object.keys(statsByMonth).length === 0 && <tr><td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Aucune donnée</td></tr>}
-                    </tbody>
-                </table>
+                                return (
+                                    <tr key={month}>
+                                        <td style={{ fontWeight: '500' }}>{capitalizedDate}</td>
+                                        <td style={{ color: 'var(--success)' }}>+{item.income.toFixed(2)}€</td>
+                                        <td style={{ color: 'var(--danger)' }}>-{item.expense.toFixed(2)}€</td>
+                                        <td style={{ fontWeight: 'bold', color: item.profit >= 0 ? '#3b82f6' : 'var(--danger)' }}>
+                                            {item.profit > 0 ? '+' : ''}{item.profit.toFixed(2)}€
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {Object.keys(statsByMonth).length === 0 && <tr><td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Aucune donnée</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div className="card">
-                <h2>Détail Revenus par Plateforme (Net Final)</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Plateforme</th>
-                            <th>CA Brut</th>
-                            <th>Net Final</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {Object.values(byPlatform).map((item, idx) => (
-                            <tr key={idx}>
-                                <td><span className="badge">{item.name}</span></td>
-                                <td>{item.gross.toFixed(2)}€</td>
-                                <td style={{ color: 'var(--success)', fontWeight: 'bold' }}>{item.final.toFixed(2)}€</td>
+                <h2>Détail Revenus par Plateforme</h2>
+                <div className="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Plateforme</th>
+                                <th>CA Brut</th>
+                                <th>Net Interm.</th>
+                                <th>Net Final</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {Object.values(byPlatform).map((item, idx) => (
+                                <tr key={idx}>
+                                    <td><span className="badge">{item.name}</span></td>
+                                    <td>{item.gross.toFixed(2)}€</td>
+                                    <td style={{ opacity: 0.8 }}>{item.net1.toFixed(2)}€</td>
+                                    <td style={{ color: 'var(--success)', fontWeight: 'bold' }}>{item.final.toFixed(2)}€</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
