@@ -56,12 +56,18 @@ export default function StatsDashboard() {
         profit: acc.profit + curr.profit
     }), { income: 0, expense: 0, profit: 0 });
 
+    // 3. TJM Moyen Calculation
+    const incomesWithTjm = incomes.filter(inc => inc.tjm && inc.tjm > 0);
+    const avgTjm = incomesWithTjm.length > 0
+        ? incomesWithTjm.reduce((acc, curr) => acc + curr.tjm, 0) / incomesWithTjm.length
+        : 0;
+
     return (
         <div>
             {/* Global Summary Card */}
             <div className="card" style={{ marginBottom: '2rem', border: '1px solid var(--border)' }}>
                 <h2 style={{ marginBottom: '1rem' }}>Bilan Global</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', textAlign: 'center' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', textAlign: 'center' }}>
                     <div style={{ padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '8px' }}>
                         <div style={{ color: 'var(--text-muted)', fontSize: '0.9em' }}>Total Recettes (Net)</div>
                         <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: 'var(--success)' }}>{globalTotal.income.toFixed(2)}€</div>
@@ -74,6 +80,12 @@ export default function StatsDashboard() {
                         <div style={{ color: 'var(--text-muted)', fontSize: '0.9em' }}>Résultat Net</div>
                         <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: globalTotal.profit >= 0 ? '#3b82f6' : 'var(--danger)' }}>
                             {globalTotal.profit > 0 ? '+' : ''}{globalTotal.profit.toFixed(2)}€
+                        </div>
+                    </div>
+                    <div style={{ padding: '1rem', backgroundColor: '#faf5ff', borderRadius: '8px' }}>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9em' }}>TJM Moyen</div>
+                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: 'var(--accent)' }}>
+                            {avgTjm > 0 ? Math.round(avgTjm) + '€' : '-'}
                         </div>
                     </div>
                 </div>

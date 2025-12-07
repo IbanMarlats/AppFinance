@@ -313,24 +313,24 @@ app.get('/api/incomes', authenticateToken, (req, res) => {
 });
 
 app.post('/api/incomes', authenticateToken, (req, res) => {
-    const { name, amount, date, platformId, is_recurring } = req.body;
+    const { name, amount, date, platformId, is_recurring, tjm } = req.body;
     const id = uuidv4();
-    db.run("INSERT INTO incomes (id, name, amount, date, platformId, is_recurring, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [id, name, amount, date, platformId, is_recurring ? 1 : 0, req.user.id],
+    db.run("INSERT INTO incomes (id, name, amount, date, platformId, is_recurring, tjm, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [id, name, amount, date, platformId, is_recurring ? 1 : 0, tjm || null, req.user.id],
         function (err) {
             if (err) return res.status(500).json({ error: err.message });
-            res.json({ id, name, amount, date, platformId, is_recurring: !!is_recurring });
+            res.json({ id, name, amount, date, platformId, is_recurring: !!is_recurring, tjm });
         }
     );
 });
 
 app.put('/api/incomes/:id', authenticateToken, (req, res) => {
-    const { name, amount, date, platformId, is_recurring } = req.body;
-    db.run("UPDATE incomes SET name = ?, amount = ?, date = ?, platformId = ?, is_recurring = ? WHERE id = ? AND user_id = ?",
-        [name, amount, date, platformId, is_recurring ? 1 : 0, req.params.id, req.user.id],
+    const { name, amount, date, platformId, is_recurring, tjm } = req.body;
+    db.run("UPDATE incomes SET name = ?, amount = ?, date = ?, platformId = ?, is_recurring = ?, tjm = ? WHERE id = ? AND user_id = ?",
+        [name, amount, date, platformId, is_recurring ? 1 : 0, tjm || null, req.params.id, req.user.id],
         function (err) {
             if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: req.params.id, name, amount, date, platformId, is_recurring: !!is_recurring });
+            res.json({ id: req.params.id, name, amount, date, platformId, is_recurring: !!is_recurring, tjm });
         }
     );
 });

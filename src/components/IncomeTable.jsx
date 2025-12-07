@@ -10,6 +10,7 @@ export default function IncomeTable() {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [platformId, setPlatformId] = useState('');
     const [isRecurring, setIsRecurring] = useState(false);
+    const [tjm, setTjm] = useState('');
 
     const [editingId, setEditingId] = useState(null);
     const [editForm, setEditForm] = useState({});
@@ -21,9 +22,17 @@ export default function IncomeTable() {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!desc || !amount || !platformId) return;
-        addIncome({ name: desc, amount: parseFloat(amount), date, platformId, is_recurring: isRecurring });
+        addIncome({
+            name: desc,
+            amount: parseFloat(amount),
+            date,
+            platformId,
+            is_recurring: isRecurring,
+            tjm: tjm ? parseFloat(tjm) : null
+        });
         setDesc('');
         setAmount('');
+        setTjm('');
         setIsRecurring(false);
     };
 
@@ -53,7 +62,8 @@ export default function IncomeTable() {
     const saveEdit = () => {
         updateIncome(editingId, {
             ...editForm,
-            amount: parseFloat(editForm.amount)
+            amount: parseFloat(editForm.amount),
+            tjm: editForm.tjm ? parseFloat(editForm.tjm) : null
         });
         setEditingId(null);
     };
@@ -83,6 +93,10 @@ export default function IncomeTable() {
     const tvaProgress = Math.min((totals.gross / TVA_THRESHOLD) * 100, 100);
     const tvaColor = tvaProgress >= 100 ? 'var(--danger)' : tvaProgress >= 80 ? 'var(--warning)' : 'var(--success)';
 
+    const MICRO_THRESHOLD = 77700;
+    const microProgress = Math.min((totals.gross / MICRO_THRESHOLD) * 100, 100);
+    const microColor = microProgress >= 100 ? 'var(--danger)' : microProgress >= 80 ? 'var(--warning)' : '#3b82f6';
+
     return (
         <div className="card">
             <div className="flex justify-between" style={{ marginBottom: '1rem', alignItems: 'center' }}>
@@ -97,36 +111,9 @@ export default function IncomeTable() {
                 </div>
             </div>
 
-            {/* Jauge Franchise TVA */}
-            <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9em', color: 'var(--text-muted)' }}>
-                    <span>Franchise en base de TVA (Seuil: {TVA_THRESHOLD.toLocaleString()}€)</span>
-                    <span style={{ fontWeight: 'bold', color: tvaColor }}>
-                        {totals.gross.toFixed(2)}€ / {TVA_THRESHOLD.toLocaleString()}€ ({((totals.gross / TVA_THRESHOLD) * 100).toFixed(1)}%)
-                    </span>
-                </div>
-                <div style={{
-                    backgroundColor: '#e5e7eb',
-                    borderRadius: '9999px',
-                    height: '0.75rem',
-                    width: '100%',
-                    overflow: 'hidden'
-                }}>
-                    <div style={{
-                        backgroundColor: tvaColor,
-                        height: '100%',
-                        width: `${tvaProgress}%`,
-                        transition: 'width 0.5s ease-in-out'
-                    }} />
-                </div>
-                {tvaProgress >= 100 && (
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.85em', color: 'var(--danger)', fontWeight: 'bold' }}>
-                        ⚠️ Seuil dépassé : Vous êtes probablement assujetti à la TVA.
-                    </div>
-                )}
-            </div>
 
-            <form onSubmit={handleSubmit} className="grid" style={{ gridTemplateColumns: '150px 1fr 1fr 150px auto auto', gap: '0.5rem', marginBottom: '2rem', alignItems: 'center' }}>
+
+            <form onSubmit={handleSubmit} className="grid" style={{ gridTemplateColumns: '150px 1fr 1fr 150px 100px auto auto', gap: '0.5rem', marginBottom: '2rem', alignItems: 'center' }}>
                 <input
                     type="date"
                     value={date}
@@ -150,6 +137,14 @@ export default function IncomeTable() {
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                 />
+                <input
+                    type="number"
+                    step="1"
+                    placeholder="TJM (Opt.)"
+                    value={tjm}
+                    onChange={e => setTjm(e.target.value)}
+                    style={{ width: '100px' }}
+                />
                 <label className="flex items-center space-x-2 cursor-pointer" title="Revenu Mensuel">
                     <input
                         type="checkbox"
@@ -169,6 +164,7 @@ export default function IncomeTable() {
                             <th>Nom</th>
                             <th>Plateforme</th>
                             <th>Montant</th>
+                            <th>TJM</th>
                             <th>Frais</th>
                             <th>Net Interm.</th>
                             <th>URSSAF (25%)</th>
@@ -203,6 +199,7 @@ export default function IncomeTable() {
                                             </select>
                                         </td>
                                         <td><input type="number" step="0.01" value={editForm.amount} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} /></td>
+                                        <td><input type="number" step="1" value={editForm.tjm || ''} onChange={e => setEditForm({ ...editForm, tjm: e.target.value })} style={{ width: '80px' }} /></td>
                                         <td colSpan="4"></td>
                                         <td className="action-cell">
                                             <button className="primary btn-action btn-icon" onClick={saveEdit}>V</button>
@@ -223,6 +220,7 @@ export default function IncomeTable() {
                                         <span className="badge">{p.name}</span>
                                     </td>
                                     <td style={{ opacity: 0.7 }}>{gross.toFixed(2)}€</td>
+                                    <td style={{ fontSize: '0.9em', color: 'var(--text-muted)' }}>{inc.tjm ? inc.tjm + '€' : '-'}</td>
                                     <td style={{ color: 'var(--danger)', fontSize: '0.9em' }}>-{fee.toFixed(2)}€</td>
                                     <td style={{ opacity: 0.7 }}>{net1.toFixed(2)}€</td>
                                     <td style={{ color: 'var(--accent)', fontSize: '0.9em' }}>-{urssaf.toFixed(2)}€</td>
@@ -245,6 +243,7 @@ export default function IncomeTable() {
                             <tr style={{ fontWeight: 'bold', backgroundColor: '#f9fafb', borderTop: '2px solid #e2e8f0' }}>
                                 <td colSpan="3" style={{ textAlign: 'right' }}>TOTAUX :</td>
                                 <td>{totals.gross.toFixed(2)}€</td>
+                                <td></td>
                                 <td style={{ color: 'var(--danger)' }}>-{totals.fee.toFixed(2)}€</td>
                                 <td>{totals.net1.toFixed(2)}€</td>
                                 <td style={{ color: 'var(--accent)' }}>-{totals.urssaf.toFixed(2)}€</td>

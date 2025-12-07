@@ -62,12 +62,14 @@ db.serialize(() => {
     date TEXT NOT NULL,
     platformId TEXT,
     is_recurring BOOLEAN DEFAULT 0,
+    tjm REAL,
     user_id TEXT,
     FOREIGN KEY(platformId) REFERENCES platforms(id),
     FOREIGN KEY(user_id) REFERENCES users(id)
   )`);
   addColumnIfNotExists(db, 'incomes', 'user_id', 'TEXT REFERENCES users(id)');
   addColumnIfNotExists(db, 'incomes', 'is_recurring', 'BOOLEAN DEFAULT 0');
+  addColumnIfNotExists(db, 'incomes', 'tjm', 'REAL');
 
   // Expenses
   db.run(`CREATE TABLE IF NOT EXISTS expenses (
