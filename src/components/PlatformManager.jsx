@@ -6,6 +6,7 @@ export default function PlatformManager() {
     const { platforms, addPlatform, deletePlatform, updatePlatform } = useFinance();
     const [name, setName] = useState('');
     const [taxRate, setTaxRate] = useState('');
+    const [fixedFee, setFixedFee] = useState('');
 
     const [editingId, setEditingId] = useState(null);
     const [editForm, setEditForm] = useState({});
@@ -17,9 +18,10 @@ export default function PlatformManager() {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!name || !taxRate) return;
-        addPlatform({ name, taxRate: parseFloat(taxRate) });
+        addPlatform({ name, taxRate: parseFloat(taxRate), fixed_fee: fixedFee ? parseFloat(fixedFee) : 0 });
         setName('');
         setTaxRate('');
+        setFixedFee('');
     };
 
     const handleDelete = (id) => {
@@ -48,7 +50,8 @@ export default function PlatformManager() {
     const saveEdit = () => {
         updatePlatform(editingId, {
             ...editForm,
-            taxRate: parseFloat(editForm.taxRate)
+            taxRate: parseFloat(editForm.taxRate),
+            fixed_fee: editForm.fixed_fee ? parseFloat(editForm.fixed_fee) : 0
         });
         setEditingId(null);
     };
@@ -57,7 +60,7 @@ export default function PlatformManager() {
         <div className="card">
             <h2 style={{ marginBottom: '1.5rem' }}>Configuration des Plateformes</h2>
 
-            <form onSubmit={handleSubmit} className="grid" style={{ gridTemplateColumns: '1fr 1fr auto', marginBottom: '2rem' }}>
+            <form onSubmit={handleSubmit} className="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr auto', marginBottom: '2rem' }}>
                 <input
                     placeholder="Nom (ex: Malt, Upwork...)"
                     value={name}
@@ -70,6 +73,13 @@ export default function PlatformManager() {
                     value={taxRate}
                     onChange={e => setTaxRate(e.target.value)}
                 />
+                <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Frais Fixe (€)"
+                    value={fixedFee}
+                    onChange={e => setFixedFee(e.target.value)}
+                />
                 <button type="submit" className="primary btn-action">Ajouter</button>
             </form>
 
@@ -78,7 +88,8 @@ export default function PlatformManager() {
                     <thead>
                         <tr>
                             <th>Nom</th>
-                            <th>Frais Plateforme</th>
+                            <th>Frais Variable (%)</th>
+                            <th>Frais Fixe (€)</th>
                             <th style={{ textAlign: 'right' }}>Actions</th>
                         </tr>
                     </thead>
@@ -91,6 +102,7 @@ export default function PlatformManager() {
                                     <tr key={p.id} style={{ backgroundColor: '#f8fafc' }}>
                                         <td><input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></td>
                                         <td><input type="number" step="0.01" value={editForm.taxRate} onChange={e => setEditForm({ ...editForm, taxRate: e.target.value })} /></td>
+                                        <td><input type="number" step="0.01" value={editForm.fixed_fee} onChange={e => setEditForm({ ...editForm, fixed_fee: e.target.value })} /></td>
                                         <td className="action-cell">
                                             <button className="primary btn-action btn-icon" onClick={saveEdit}>V</button>
                                             <button className="btn-action btn-icon" onClick={cancelEdit}>X</button>
@@ -103,6 +115,7 @@ export default function PlatformManager() {
                                 <tr key={p.id}>
                                     <td>{p.name}</td>
                                     <td>{p.taxRate}%</td>
+                                    <td>{p.fixed_fee ? p.fixed_fee.toFixed(2) + '€' : '-'}</td>
                                     <td className="action-cell">
                                         <button className="btn-action btn-icon" onClick={() => startEdit(p)} title="Modifier">✎</button>
                                         <button className="danger btn-action btn-icon" onClick={() => handleDelete(p.id)} title="Supprimer">X</button>

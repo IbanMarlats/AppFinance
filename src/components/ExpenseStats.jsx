@@ -1,9 +1,13 @@
 import { useFinance } from '../context/FinanceContext';
 
-export default function ExpenseStats() {
+export default function ExpenseStats({ year }) {
     const { expenses, categories } = useFinance();
 
-    const stats = expenses.reduce((acc, curr) => {
+    const filteredExpenses = year
+        ? expenses.filter(e => new Date(e.date).getFullYear() === year)
+        : expenses;
+
+    const stats = filteredExpenses.reduce((acc, curr) => {
         const cat = curr.category || 'Autre';
         if (!acc[cat]) acc[cat] = 0;
         acc[cat] += curr.amount;

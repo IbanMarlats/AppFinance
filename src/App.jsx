@@ -12,6 +12,7 @@ import StatsDashboard from './components/StatsDashboard';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import VerifyEmail from './components/auth/VerifyEmail';
+import AdminDashboard from './components/AdminDashboard';
 
 import UnverifiedBanner from './components/UnverifiedBanner';
 
@@ -85,6 +86,11 @@ function FinanceApp() {
           <div className={`nav-item ${tab === 'stats' ? 'active' : ''}`} onClick={() => setTab('stats')}>
             Statistiques
           </div>
+          {user.role === 'admin' && (
+            <div className={`nav-item ${tab === 'admin' ? 'active' : ''}`} onClick={() => setTab('admin')}>
+              Admin
+            </div>
+          )}
         </div>
 
         <main>
@@ -97,6 +103,7 @@ function FinanceApp() {
             </div>
           )}
           {tab === 'stats' && <StatsDashboard />}
+          {tab === 'admin' && user.role === 'admin' && <AdminDashboard />}
         </main>
       </div>
     </FinanceProvider>

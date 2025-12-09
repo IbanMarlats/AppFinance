@@ -10,21 +10,24 @@ export const FinanceProvider = ({ children }) => {
     const [expenses, setExpenses] = useState([]);
     const [platforms, setPlatforms] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [settings, setSettings] = useState({});
 
     // Fetch initial data
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [pRes, iRes, eRes, cRes] = await Promise.all([
+                const [pRes, iRes, eRes, cRes, sRes] = await Promise.all([
                     axios.get(`${API_URL}/platforms`),
                     axios.get(`${API_URL}/incomes`),
                     axios.get(`${API_URL}/expenses`),
-                    axios.get(`${API_URL}/categories`)
+                    axios.get(`${API_URL}/categories`),
+                    axios.get(`${API_URL}/settings`)
                 ]);
                 setPlatforms(pRes.data);
                 setIncomes(iRes.data);
                 setExpenses(eRes.data);
                 setCategories(cRes.data);
+                setSettings(sRes.data);
             } catch (err) {
                 console.error('Error fetching data:', err);
                 // Optionally handle 401s here if we want to force logout, 
@@ -133,12 +136,23 @@ export const FinanceProvider = ({ children }) => {
         }
     };
 
+    const updateSettings = async (newSettings) => {
+        try {
+            await axios.put(`${API_URL}/admin/settings`, newSettings);
+            setSettings(prev => ({ ...prev, ...newSettings }));
+        } catch (err) {
+            console.error('Error updating settings:', err);
+            throw err;
+        }
+    };
+
     return (
         <FinanceContext.Provider value={{
             incomes, addIncome, deleteIncome, updateIncome,
             expenses, addExpense, deleteExpense, updateExpense,
             platforms, addPlatform, deletePlatform, updatePlatform,
-            categories, addCategory, deleteCategory
+            categories, addCategory, deleteCategory,
+            settings, updateSettings
         }}>
             {children}
         </FinanceContext.Provider>

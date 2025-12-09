@@ -41,18 +41,30 @@ db.serialize(() => {
     email_hash TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     is_verified BOOLEAN DEFAULT 0,
-    verification_token TEXT
+    verification_token TEXT,
+    role TEXT DEFAULT 'freelance',
+    is_premium BOOLEAN DEFAULT 0,
+    last_login TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
   )`);
+  addColumnIfNotExists(db, 'users', 'role', "TEXT DEFAULT 'freelance'");
+  addColumnIfNotExists(db, 'users', 'is_premium', "BOOLEAN DEFAULT 0");
+  addColumnIfNotExists(db, 'users', 'last_login', "TEXT");
+  addColumnIfNotExists(db, 'users', 'last_login', "TEXT");
+  addColumnIfNotExists(db, 'users', 'created_at', "TEXT DEFAULT CURRENT_TIMESTAMP");
+  addColumnIfNotExists(db, 'users', 'newsletter', "BOOLEAN DEFAULT 1");
 
   // Platforms
   db.run(`CREATE TABLE IF NOT EXISTS platforms (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     taxRate REAL NOT NULL,
+    fixed_fee REAL DEFAULT 0,
     user_id TEXT,
     FOREIGN KEY(user_id) REFERENCES users(id)
   )`);
   addColumnIfNotExists(db, 'platforms', 'user_id', 'TEXT REFERENCES users(id)');
+  addColumnIfNotExists(db, 'platforms', 'fixed_fee', 'REAL DEFAULT 0');
 
   // Incomes
   db.run(`CREATE TABLE IF NOT EXISTS incomes (
@@ -99,6 +111,25 @@ db.serialize(() => {
   // SEEDING (Only if platforms empty) - Kept simple but generic (no user_id initially)
   // NOTE: In multi-user app, seeding global data might be weird. 
   // We will leave this for now, but newly created users won't see these unless we assign them.
+
+  // Settings
+  db.run(`CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+  )`, (err) => {
+    if (!err) {
+      // Seed Defaults
+      const defaults = {
+        tva_threshold: 36800,
+        micro_threshold: 77700,
+        urssaf_freelance: 25,
+        urssaf_ecommerce: 12.3
+      };
+      Object.entries(defaults).forEach(([key, val]) => {
+        db.run("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", [key, val]);
+      });
+    }
+  });
 });
 
 export default db;

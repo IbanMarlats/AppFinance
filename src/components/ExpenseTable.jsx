@@ -4,6 +4,17 @@ import ConfirmationModal from './ConfirmationModal';
 
 export default function ExpenseTable() {
     const { expenses, addExpense, deleteExpense, updateExpense, categories } = useFinance();
+
+    // Year Filtering
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+    const availableYears = [...new Set(expenses.map(e => new Date(e.date).getFullYear()))];
+    if (!availableYears.includes(new Date().getFullYear())) {
+        availableYears.push(new Date().getFullYear());
+    }
+    availableYears.sort((a, b) => b - a);
+
+    const filteredExpenses = expenses.filter(e => new Date(e.date).getFullYear() === selectedYear);
     const [desc, setDesc] = useState('');
     const [amount, setAmount] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -58,12 +69,30 @@ export default function ExpenseTable() {
         setEditingId(null);
     };
 
-    const total = expenses.reduce((acc, curr) => acc + curr.amount, 0);
+    const total = filteredExpenses.reduce((acc, curr) => acc + curr.amount, 0);
 
     return (
         <div className="card">
-            <div className="flex justify-between" style={{ marginBottom: '1.5rem' }}>
-                <h2>Dépenses</h2>
+            <div className="flex justify-between" style={{ marginBottom: '1.5rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <h2>Dépenses</h2>
+                    <select
+                        value={selectedYear}
+                        onChange={e => setSelectedYear(parseInt(e.target.value))}
+                        style={{
+                            fontSize: '1rem',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: '#fff',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        {availableYears.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                        ))}
+                    </select>
+                </div>
                 <div className="badge" style={{ fontSize: '1.2em', padding: '0.5em 1em', backgroundColor: '#fef2f2', border: '1px solid #fecaca' }}>
                     Total: <span style={{ color: 'var(--danger)' }}>{total.toFixed(2)}€</span>
                 </div>
@@ -114,7 +143,7 @@ export default function ExpenseTable() {
                         </tr>
                     </thead>
                     <tbody>
-                        {expenses.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).map(e => {
+                        {filteredExpenses.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).map(e => {
                             const isEditing = editingId === e.id;
 
                             if (isEditing) {
@@ -159,13 +188,13 @@ export default function ExpenseTable() {
                                 </tr>
                             );
                         })}
-                        {expenses.length === 0 && (
+                        {filteredExpenses.length === 0 && (
                             <tr>
                                 <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Aucune dépense enregistrée</td>
                             </tr>
                         )}
                     </tbody>
-                    {expenses.length > 0 && (
+                    {filteredExpenses.length > 0 && (
                         <tfoot>
                             <tr style={{ fontWeight: 'bold', backgroundColor: '#f9fafb' }}>
                                 <td colSpan="3">Total</td>
