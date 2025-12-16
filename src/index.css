@@ -11,24 +11,24 @@
   /* Slate 500 */
 
   --primary: #0f172a;
-  /* Slate 900 (Corporate) */
+  /* Slate 900 */
   --primary-hover: #334155;
   /* Slate 700 */
 
   --accent: #d946ef;
-  /* Kept for URSSAF highlight if needed, or maybe change to slate blue? */
   --accent-soft: #f1f5f9;
 
   --success: #15803d;
-  /* Green 700 - darker, more pro */
+  /* Green 700 */
   --danger: #b91c1c;
   /* Red 700 */
 
   --border: #e2e8f0;
   /* Slate 200 */
+  --border-dark: #cbd5e1;
+  /* Slate 300 */
   --radius: 6px;
-  /* Sharper corners for pro feel */
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 }
 
 body {
@@ -38,69 +38,151 @@ body {
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  font-size: 14px;
+  /* Slightly smaller base font for compactness */
+  line-height: 1.5;
 }
 
-h1,
-h2,
-h3 {
-  font-weight: 600;
+/* Typography */
+h1 {
+  font-size: 1.5rem;
   letter-spacing: -0.025em;
-  margin: 0 0 1rem 0;
+  margin: 0;
+  font-weight: 700;
   color: var(--text-main);
 }
 
+h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+/* Layout */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* Header */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+
+.header-title h1 {
+  font-size: 1.5rem;
+  color: var(--primary);
+}
+
+.header-title p {
+  font-size: 0.85rem;
+}
+
+.logout-btn {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+  height: auto;
+  min-width: auto;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.logout-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: #fef2f2;
+}
+
+/* Navigation Tabs - Modern Pill Style */
+.nav {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+  background: var(--bg-card);
+  padding: 0.25rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  width: fit-content;
+  box-shadow: var(--shadow);
+}
+
+.nav-item {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: 500;
+  padding: 0.35rem 1rem;
+  border-radius: calc(var(--radius) - 2px);
+  transition: all 0.15s ease;
+  font-size: 0.9rem;
+  border: none;
+  background: transparent;
+}
+
+.nav-item:hover {
+  color: var(--text-main);
+  background-color: var(--bg-app);
+}
+
+.nav-item.active {
+  background-color: var(--primary);
+  color: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Buttons */
 button {
   cursor: pointer;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.5rem 1rem;
-  font-size: 0.9em;
-  min-width: 80px;
-  height: 36px;
-  /* Fixed height for consistency */
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  height: 32px;
+  /* Compact height */
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all 0.15s;
   background-color: var(--bg-card);
   color: var(--text-main);
 }
 
-.action-cell {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.btn-icon {
-  width: 36px;
-  padding: 0;
-  font-size: 1.2em;
-  min-width: unset;
-  /* Override btn-action min-width for pure icons */
-}
-
 button:hover {
-  background-color: var(--bg-app);
-  border-color: #cbd5e1;
+  background-color: #f1f5f9;
+  border-color: var(--border-dark);
 }
 
 button.primary {
   background-color: var(--primary);
-  color: #ffffff;
+  color: white;
   border-color: var(--primary);
 }
 
 button.primary:hover {
   background-color: var(--primary-hover);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 button.danger {
   color: var(--danger);
-  border-color: #fca5a5;
+  border-color: #fecaca;
   background-color: #fef2f2;
 }
 
@@ -109,17 +191,19 @@ button.danger:hover {
   border-color: var(--danger);
 }
 
+/* Forms */
 input,
 select {
   background-color: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.6em;
+  padding: 0.45rem 0.6rem;
   color: var(--text-main);
-  font-size: 0.95em;
+  font-size: 0.9rem;
   width: 100%;
   box-sizing: border-box;
-  transition: border-color 0.2s;
+  height: 32px;
+  /* Align with buttons */
 }
 
 input:focus,
@@ -129,60 +213,56 @@ select:focus {
   box-shadow: 0 0 0 1px var(--primary);
 }
 
+/* Tables */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
-  font-size: 0.95em;
+  font-size: 0.9rem;
 }
 
 th,
 td {
   text-align: left;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.75rem;
+  /* Tighter padding */
   border-bottom: 1px solid var(--border);
 }
 
 th {
   color: var(--text-muted);
   font-weight: 600;
-  font-size: 0.8em;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background-color: #f8fafc;
-}
-
-tr:last-child td {
-  border-bottom: none;
 }
 
 tr:hover td {
   background-color: #f8fafc;
 }
 
+.action-cell {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 1.1em;
+  min-width: unset;
+}
+
+/* Components */
 .card {
   background-color: var(--bg-card);
   border-radius: var(--radius);
-  padding: 2rem;
+  padding: 1.5rem;
   box-shadow: var(--shadow);
   border: 1px solid var(--border);
-  margin-bottom: 2rem;
-}
-
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.flex {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.justify-between {
-  justify-content: space-between;
+  margin-bottom: 1.5rem;
 }
 
 .grid {
@@ -190,95 +270,65 @@ tr:hover td {
   gap: 1rem;
 }
 
+.flex {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
 .badge {
-  padding: 0.25em 0.75em;
+  padding: 0.15em 0.6em;
   border-radius: 999px;
-  font-size: 0.85em;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
   border: 1px solid var(--border);
 }
 
-.nav {
-  display: flex;
-  gap: 5px;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0;
+/* Utilities */
+.text-right {
+  text-align: right;
 }
 
-.nav-item {
-  cursor: pointer;
-  color: var(--text-muted);
-  font-weight: 500;
-  padding: 0.75rem 1.5rem;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
+.text-center {
+  text-align: center;
 }
 
-.nav-item:hover {
-  color: var(--text-main);
-  background-color: #f1f5f9;
-  border-radius: var(--radius) var(--radius) 0 0;
+.mt-2 {
+  margin-top: 0.5rem;
 }
 
-/* ... existing styles ... */
-
-/* Tables */
-.table-container {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+.mb-2 {
+  margin-bottom: 0.5rem;
 }
 
-/* Auth Card */
-.auth-card {
-  max-width: 400px;
-  margin: 2rem auto;
-}
-
-/* Responsive Design */
+/* Responsive */
 @media (max-width: 768px) {
   .container {
     padding: 1rem;
   }
 
-  header {
+  .app-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
 
-  h1 {
-    font-size: 2rem !important;
-  }
-
   .nav {
-    flex-wrap: wrap;
-    border-bottom: none;
-    gap: 0.5rem;
+    width: 100%;
+    overflow-x: auto;
+    padding: 0.25rem;
+    gap: 0.25rem;
   }
 
   .nav-item {
-    flex: 1 1 auto;
+    white-space: nowrap;
+    flex: 1;
     text-align: center;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background-color: var(--bg-card);
     padding: 0.5rem;
-    font-size: 0.9em;
-  }
-
-  .nav-item.active {
-    background-color: var(--primary);
-    color: white;
-    border-color: var(--primary);
-  }
-
-  /* Stack form inputs on mobile in tables if they get too squashed? 
-       Actually, horizontal scroll is better for data tables. */
-
-  .card {
-    padding: 1rem;
   }
 
   .flex {
@@ -286,10 +336,14 @@ tr:hover td {
     align-items: stretch;
   }
 
-  /* Keep action buttons side-by-side though */
   .action-cell,
   .btn-group {
     flex-direction: row;
     justify-content: flex-end;
+  }
+
+  /* Fix for flex-row utility in mobile if needed */
+  .flex-row {
+    flex-direction: row !important;
   }
 }

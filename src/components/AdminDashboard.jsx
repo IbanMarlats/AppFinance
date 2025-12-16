@@ -296,7 +296,9 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            <h3 style={{ marginBottom: '1rem' }}>Répartition par Rôle</h3>
+            {/* Admin Logs moved to separate tab */}
+
+            <h3 style={{ marginBottom: '1rem', marginTop: '2rem' }}>Répartition par Rôle</h3>
             <div className="table-container">
                 <table>
                     <thead>

@@ -108,9 +108,14 @@ db.serialize(() => {
   )`);
   addColumnIfNotExists(db, 'expense_categories', 'user_id', 'TEXT REFERENCES users(id)');
 
-  // SEEDING (Only if platforms empty) - Kept simple but generic (no user_id initially)
-  // NOTE: In multi-user app, seeding global data might be weird. 
-  // We will leave this for now, but newly created users won't see these unless we assign them.
+  // User Settings Overrides
+  db.run(`CREATE TABLE IF NOT EXISTS user_settings (
+    user_id TEXT,
+    key TEXT,
+    value TEXT,
+    PRIMARY KEY (user_id, key),
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  )`);
 
   // Settings
   db.run(`CREATE TABLE IF NOT EXISTS settings (
@@ -118,7 +123,6 @@ db.serialize(() => {
     value TEXT
   )`, (err) => {
     if (!err) {
-      // Seed Defaults
       const defaults = {
         tva_threshold: 36800,
         micro_threshold: 77700,
@@ -130,6 +134,19 @@ db.serialize(() => {
       });
     }
   });
+
+  // Audit Logs
+  db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    event_type TEXT,
+    description TEXT,
+    ip_address TEXT,
+    created_at DATETIME
+  )`);
+
+  // Verification token index
+  db.run("CREATE INDEX IF NOT EXISTS idx_verification_token ON users(verification_token)");
 });
 
 export default db;

@@ -5,6 +5,8 @@ import IncomeTable from './components/IncomeTable';
 import ExpenseTable from './components/ExpenseTable';
 import CategoryManager from './components/CategoryManager';
 import PlatformManager from './components/PlatformManager';
+import SettingsManager from './components/SettingsManager';
+import UserProfile from './components/UserProfile';
 
 // ...
 
@@ -13,11 +15,17 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import VerifyEmail from './components/auth/VerifyEmail';
 import AdminDashboard from './components/AdminDashboard';
+import AdminLogs from './components/AdminLogs';
 
 import UnverifiedBanner from './components/UnverifiedBanner';
 
 function FinanceApp() {
-  const [tab, setTab] = useState('income');
+  const [tab, setTabState] = useState(() => localStorage.getItem('active_tab') || 'income');
+
+  const setTab = (newTab) => {
+    setTabState(newTab);
+    localStorage.setItem('active_tab', newTab);
+  };
   const { user, logout, loading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -61,37 +69,65 @@ function FinanceApp() {
     <FinanceProvider>
       <div className="container">
         <UnverifiedBanner />
-        <header className="flex justify-between" style={{ marginBottom: '3rem', marginTop: '1rem', alignItems: 'flex-start' }}>
-          <div>
-            <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
-              Finance Micro
-            </h1>
-            <p style={{ color: 'var(--text-muted)' }}>Gestion simple de revenus et charges</p>
+
+        <header className="app-header">
+          <div className="header-title">
+            <h1>Finance Micro</h1>
+            <p>Gestion simplifiée</p>
           </div>
-          <button onClick={logout} style={{ fontSize: '0.85em' }}>
+          <button onClick={logout} className="logout-btn">
             Déconnexion
           </button>
         </header>
 
-        <div className="nav">
-          <div className={`nav-item ${tab === 'income' ? 'active' : ''}`} onClick={() => setTab('income')}>
+        <nav className="nav">
+          <button
+            className={`nav-item ${tab === 'income' ? 'active' : ''}`}
+            onClick={() => setTab('income')}
+          >
             Revenus
-          </div>
-          <div className={`nav-item ${tab === 'expense' ? 'active' : ''}`} onClick={() => setTab('expense')}>
+          </button>
+          <button
+            className={`nav-item ${tab === 'expense' ? 'active' : ''}`}
+            onClick={() => setTab('expense')}
+          >
             Dépenses
-          </div>
-          <div className={`nav-item ${tab === 'config' ? 'active' : ''}`} onClick={() => setTab('config')}>
+          </button>
+          <button
+            className={`nav-item ${tab === 'config' ? 'active' : ''}`}
+            onClick={() => setTab('config')}
+          >
             Configuration
-          </div>
-          <div className={`nav-item ${tab === 'stats' ? 'active' : ''}`} onClick={() => setTab('stats')}>
+          </button>
+          <button
+            className={`nav-item ${tab === 'stats' ? 'active' : ''}`}
+            onClick={() => setTab('stats')}
+          >
             Statistiques
-          </div>
+          </button>
+          <button
+            className={`nav-item ${tab === 'profile' ? 'active' : ''}`}
+            onClick={() => setTab('profile')}
+          >
+            Profil
+          </button>
           {user.role === 'admin' && (
-            <div className={`nav-item ${tab === 'admin' ? 'active' : ''}`} onClick={() => setTab('admin')}>
-              Admin
-            </div>
+            <>
+              <button
+                className={`nav-item ${tab === 'admin' ? 'active' : ''}`}
+                onClick={() => setTab('admin')}
+              >
+                Admin
+              </button>
+              <button
+                className={`nav-item ${tab === 'audit' ? 'active' : ''}`}
+                onClick={() => setTab('audit')}
+              >
+                Audit
+              </button>
+            </>
           )}
-        </div>
+        </nav>
 
         <main>
           {tab === 'income' && <IncomeTable />}
@@ -100,10 +136,13 @@ function FinanceApp() {
             <div className="grid gap-4">
               <PlatformManager />
               <CategoryManager />
+              <SettingsManager />
             </div>
           )}
           {tab === 'stats' && <StatsDashboard />}
+          {tab === 'profile' && <UserProfile />}
           {tab === 'admin' && user.role === 'admin' && <AdminDashboard />}
+          {tab === 'audit' && user.role === 'admin' && <AdminLogs />}
         </main>
       </div>
     </FinanceProvider>

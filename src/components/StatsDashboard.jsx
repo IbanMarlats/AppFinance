@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../context/AuthContext';
 import ExpenseStats from './ExpenseStats';
@@ -19,8 +20,41 @@ export default function StatsDashboard() {
         annualHistory: false
     });
 
-    const toggleSection = (key) => {
-        setVisibleSections(prev => ({ ...prev, [key]: !prev[key] }));
+    // Load from settings when available
+    useEffect(() => {
+        if (settings && settings.stats_preferences) {
+            try {
+                const prefs = JSON.parse(settings.stats_preferences);
+                setVisibleSections(prev => ({ ...prev, ...prefs }));
+            } catch (e) {
+                console.error("Failed to parse stats preferences", e);
+            }
+        } else {
+            // Fallback to localStorage if no DB settings found (legacy or first load)
+            const saved = localStorage.getItem('stats_preferences');
+            if (saved) {
+                try {
+                    setVisibleSections(JSON.parse(saved));
+                } catch (e) { }
+            }
+        }
+    }, [settings]);
+
+    const toggleSection = async (key) => {
+        const newState = { ...visibleSections, [key]: !visibleSections[key] };
+        setVisibleSections(newState);
+
+        // Save to DB
+        try {
+            await axios.put('http://localhost:3001/api/settings', {
+                stats_preferences: JSON.stringify(newState)
+            }, { withCredentials: true });
+
+            // Also update localStorage as backup/fast load
+            localStorage.setItem('stats_preferences', JSON.stringify(newState));
+        } catch (e) {
+            console.error("Failed to save preferences", e);
+        }
     };
 
     // Compute available years from both incomes and expenses
@@ -162,37 +196,49 @@ export default function StatsDashboard() {
                         }}>
                             <h4 style={{ marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold' }}>Afficher/Masquer</h4>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: 'pointer' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: user.is_premium ? 'pointer' : 'not-allowed', opacity: user.is_premium ? 1 : 0.6 }}>
                                     <input
                                         type="checkbox"
-                                        checked={visibleSections.monthlyFixed}
-                                        onChange={() => toggleSection('monthlyFixed')}
+                                        checked={user.is_premium && visibleSections.monthlyFixed}
+                                        onChange={() => user.is_premium && toggleSection('monthlyFixed')}
+                                        disabled={!user.is_premium}
                                         style={{ marginRight: '0.5rem' }}
-                                    /> Dépenses Mensuelles (Fixes)
+                                    />
+                                    Dépenses Mensuelles
+                                    {!user.is_premium && <span className="text-xs bg-amber-100 text-amber-800 px-1.5 rounded ml-2">Premium</span>}
                                 </label>
-                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: 'pointer' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: user.is_premium ? 'pointer' : 'not-allowed', opacity: user.is_premium ? 1 : 0.6 }}>
                                     <input
                                         type="checkbox"
-                                        checked={visibleSections.expenses}
-                                        onChange={() => toggleSection('expenses')}
+                                        checked={user.is_premium && visibleSections.expenses}
+                                        onChange={() => user.is_premium && toggleSection('expenses')}
+                                        disabled={!user.is_premium}
                                         style={{ marginRight: '0.5rem' }}
-                                    /> Répartition par Catégorie
+                                    />
+                                    Répartition par Catégorie
+                                    {!user.is_premium && <span className="text-xs bg-amber-100 text-amber-800 px-1.5 rounded ml-2">Premium</span>}
                                 </label>
-                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: 'pointer' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: user.is_premium ? 'pointer' : 'not-allowed', opacity: user.is_premium ? 1 : 0.6 }}>
                                     <input
                                         type="checkbox"
-                                        checked={visibleSections.platforms}
-                                        onChange={() => toggleSection('platforms')}
+                                        checked={user.is_premium && visibleSections.platforms}
+                                        onChange={() => user.is_premium && toggleSection('platforms')}
+                                        disabled={!user.is_premium}
                                         style={{ marginRight: '0.5rem' }}
-                                    /> Détail par Plateforme
+                                    />
+                                    Détail par Plateforme
+                                    {!user.is_premium && <span className="text-xs bg-amber-100 text-amber-800 px-1.5 rounded ml-2">Premium</span>}
                                 </label>
-                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: 'pointer' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: user.is_premium ? 'pointer' : 'not-allowed', opacity: user.is_premium ? 1 : 0.6 }}>
                                     <input
                                         type="checkbox"
-                                        checked={visibleSections.annualHistory}
-                                        onChange={() => toggleSection('annualHistory')}
+                                        checked={user.is_premium && visibleSections.annualHistory}
+                                        onChange={() => user.is_premium && toggleSection('annualHistory')}
+                                        disabled={!user.is_premium}
                                         style={{ marginRight: '0.5rem' }}
-                                    /> Bilan par Année
+                                    />
+                                    Bilan par Année
+                                    {!user.is_premium && <span className="text-xs bg-amber-100 text-amber-800 px-1.5 rounded ml-2">Premium</span>}
                                 </label>
                             </div>
                         </div>
@@ -246,7 +292,7 @@ export default function StatsDashboard() {
             </div>
 
             {/* Recurring Expenses Table */}
-            {visibleSections.monthlyFixed && (
+            {user.is_premium && visibleSections.monthlyFixed && (
                 <div className="card" style={{ marginBottom: '2rem' }}>
                     <div className="flex justify-between" style={{ marginBottom: '1rem' }}>
                         <h2>Dépenses Mensuelles (Fixes)</h2>
@@ -283,7 +329,7 @@ export default function StatsDashboard() {
             )}
 
             {/* Expense Stats by Category */}
-            {visibleSections.expenses && <ExpenseStats year={selectedYear} />}
+            {user.is_premium && visibleSections.expenses && <ExpenseStats year={selectedYear} />}
 
             <div className="card">
                 <h2>Bilan par Mois</h2>
@@ -321,7 +367,7 @@ export default function StatsDashboard() {
                 </div>
             </div>
 
-            {visibleSections.platforms && (
+            {user.is_premium && visibleSections.platforms && (
                 <div className="card">
                     <h2>Détail Revenus par Plateforme</h2>
                     <div className="table-container">
@@ -348,7 +394,7 @@ export default function StatsDashboard() {
                     </div>
                 </div>
             )}
-            {visibleSections.annualHistory && (
+            {user.is_premium && visibleSections.annualHistory && (
                 <div className="card">
                     <h2>Bilan par Année</h2>
                     <div className="table-container">
