@@ -9,7 +9,9 @@ import {
     LogOut,
     Menu,
     Shield,
-    TrendingUp
+    TrendingUp,
+    Crown,
+    Target
 } from 'lucide-react';
 
 export default function Layout({ children, activeTab, onTabChange }) {
@@ -62,6 +64,7 @@ export default function Layout({ children, activeTab, onTabChange }) {
                     <NavItem id="dashboard" icon={LayoutDashboard} label="Tableau de bord" />
                     <NavItem id="income" icon={Wallet} label="Revenus" />
                     <NavItem id="expense" icon={Receipt} label="Dépenses" />
+                    <NavItem id="goals" icon={Target} label="Objectifs" />
 
                     <div className="my-4 border-t border-slate-100 mx-3"></div>
 
@@ -79,8 +82,15 @@ export default function Layout({ children, activeTab, onTabChange }) {
                 {/* User Footer */}
                 <div className="p-4 border-t border-slate-100">
                     <div className={`flex items-center gap-3 mb-3 ${!isSidebarOpen && 'justify-center'}`}>
-                        <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                            {user?.email?.charAt(0).toUpperCase()}
+                        <div className="relative">
+                            <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                                {user?.email?.charAt(0).toUpperCase()}
+                            </div>
+                            {user?.is_premium && (
+                                <div className="absolute -top-1 -right-1 bg-amber-400 text-white rounded-full p-0.5 border-2 border-white shadow-sm flex items-center justify-center">
+                                    <Crown size={10} fill="currentColor" />
+                                </div>
+                            )}
                         </div>
                         {isSidebarOpen && (
                             <div className="flex-1 overflow-hidden">

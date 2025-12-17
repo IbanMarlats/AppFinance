@@ -15,14 +15,120 @@ router.use(isAdmin);
 router.get('/stats', (req, res) => {
     // Re-doing the query for simplicity and accuracy
     const query = `
-        SELECT role, is_premium, last_login, newsletter FROM users
+        SELECT role, is_premium, last_login, newsletter, subscription_plan, trial_until, subscription_started_at, created_at, is_gift FROM users
     `;
     db.all(query, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
 
         const totalUsers = rows.length;
-        const premiumUsers = rows.filter(r => r.is_premium === 1).length;
+        const now = new Date();
+
+        // Trial Users: Anyone with an active trial date (whether manual 'trial' plan OR Stripe 'monthly' with trial)
+        const trialUsers = rows.filter(r => {
+            if (!r.trial_until) return false;
+            return new Date(r.trial_until) > now;
+        }).length;
+
+        // Premium Users: Active is_premium BUT NOT currently in trial
+        const premiumUsers = rows.filter(r => {
+            if (r.is_premium !== 1) return false;
+            // Exclude if in trial
+            if (r.trial_until && new Date(r.trial_until) > now) return false;
+            return true;
+        }).length;
+
         const newsletterUsers = rows.filter(r => r.newsletter === 1).length;
+
+        // Subscription Breakdowns (Exclude Trials from these counts to match 'premiumUsers')
+        const isPaidPremium = (r) => r.is_premium === 1 && (!r.trial_until || new Date(r.trial_until) <= now);
+
+        const premiumMonthly = rows.filter(r => isPaidPremium(r) && r.subscription_plan === 'monthly' && !r.is_gift).length;
+        const premiumAnnual = rows.filter(r => isPaidPremium(r) && r.subscription_plan === 'annual' && !r.is_gift).length;
+        const premiumLifetime = rows.filter(r => isPaidPremium(r) && r.subscription_plan === 'lifetime' && !r.is_gift).length;
+
+        // This 'premiumTrial' variable is now redundant or can mean 'Manual Trial plan' specifically? 
+        // Let's keep it as specific 'trial' plan count if needed, or just remove.
+        // Actually, let's keep it as 'Manual Trial Plan' count for debug/legacy.
+        const premiumTrial = rows.filter(r => r.subscription_plan === 'trial' && new Date(r.trial_until) > now).length;
+
+        // Gift Breakdown
+        const premiumGiftTotal = rows.filter(r => r.is_premium === 1 && r.is_gift).length;
+
+        const giftMonthly = rows.filter(r => r.is_premium === 1 && r.is_gift && r.subscription_plan === 'monthly').length;
+        const giftAnnual = rows.filter(r => r.is_premium === 1 && r.is_gift && r.subscription_plan === 'annual').length;
+        const giftLifetime = rows.filter(r => r.is_premium === 1 && r.is_gift && r.subscription_plan === 'lifetime').length;
+
+        // Trial Analytics - Global
+        // Converted: Had a trial (trial_until exists and is past) AND is currently Premium (paid)
+        const trialConverted = rows.filter(r => {
+            return r.trial_until && new Date(r.trial_until) < now && r.is_premium === 1 && isPaidPremium(r);
+        }).length;
+
+        // Churn: Had a trial (trial_until exists and is past) AND is NOT premium
+        const trialChurn = rows.filter(r => {
+            return r.trial_until && new Date(r.trial_until) < now && r.is_premium === 0;
+        }).length;
+
+        // Trial Analytics - Monthly Evolution (Last 12 Months)
+        const trialMonthlyStats = [];
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
+
+            // Users whose trial ended in this month
+            const trialsEndedInMonth = rows.filter(r => {
+                if (!r.trial_until) return false;
+                const trialEnd = new Date(r.trial_until);
+                return trialEnd.toISOString().slice(0, 7) === monthKey && trialEnd < now;
+            });
+
+            const count = trialsEndedInMonth.length;
+            const converted = trialsEndedInMonth.filter(r => r.is_premium === 1 && r.subscription_plan !== 'trial').length;
+            const churn = trialsEndedInMonth.filter(r => r.is_premium === 0).length;
+
+            if (count > 0 || i < 6) {
+                trialMonthlyStats.push({ month: monthKey, count, converted, churn });
+            }
+        }
+
+        // Revenue Projection (MRR) - Current
+        // Monthly: 8.90€ / month
+        // Annual: 70.80€ / year => 5.90€ / month
+        // Strictly exclude gifts (row.is_gift)
+        const monthlyRevenue = premiumMonthly * 8.90;
+        const annualRevenue = premiumAnnual * (70.80 / 12);
+        const projectedMRR = monthlyRevenue + annualRevenue;
+
+        // MRR Evolution (Last 12 Months)
+        const mrrHistory = [];
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            const monthKey = date.toISOString().slice(0, 7);
+            const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+            // Estimate active paid users at that time
+            const activeInMonth = rows.filter(r => {
+                // Must be currently premium or was premium? Hard to know strict history without event log.
+                // We assume current premium status reflects "subscription started" date.
+                if (r.is_premium !== 1) return false;
+                if (r.is_gift) return false; // Exclude gifts from history too
+                if (r.subscription_plan !== 'monthly' && r.subscription_plan !== 'annual') return false; // Exclude free
+
+                const startStr = r.subscription_started_at || r.created_at; // Fallback to created_at
+                const startDate = new Date(startStr);
+                return startDate <= monthEnd;
+            });
+
+            let mrr = 0;
+            activeInMonth.forEach(u => {
+                if (u.subscription_plan === 'monthly') mrr += 8.90;
+                if (u.subscription_plan === 'annual') mrr += (70.80 / 12);
+            });
+
+            mrrHistory.push({ month: monthKey, value: mrr });
+        }
 
         // Active Users (Logged in within 3 months)
         const threeMonthsAgo = new Date();
@@ -48,19 +154,97 @@ router.get('/stats', (req, res) => {
 
         // Get unique visitors count
         db.get("SELECT COUNT(DISTINCT visitor_id) as uniqueVisitors FROM site_visits", [], (err, visitRow) => {
-            if (err) {
-                console.error("Error fetching visit stats:", err);
-                // Return stats without visitors if error, or just 0
-                return res.json({ totalUsers, premiumUsers, activeUsers, activePremiumUsers, newsletterUsers, usersByRole, uniqueVisitors: 0 });
-            }
+            const uniqueVisitors = (visitRow && visitRow.uniqueVisitors) || 0;
+
             res.json({
                 totalUsers,
                 premiumUsers,
+                premiumMonthly,
+                premiumAnnual,
+                premiumLifetime,
+                premiumTrial,
+                premiumGift: premiumGiftTotal, // Total gifts
+                giftBreakdown: { monthly: giftMonthly, annual: giftAnnual, lifetime: giftLifetime }, // Detailed gifts
+                trialUsers,
+                trialConverted,
+                trialChurn,
+                trialMonthlyStats,
+                projectedMRR,
+                mrrHistory,
                 activeUsers,
                 activePremiumUsers,
                 newsletterUsers,
                 usersByRole,
-                uniqueVisitors: visitRow ? visitRow.uniqueVisitors : 0
+                uniqueVisitors
+            });
+        });
+    });
+});
+
+// Admin User List (Replaces simple search)
+router.post('/users', (req, res) => {
+    let { page = 1, limit = 10, search = '', filter = 'all', sort = 'newest' } = req.body;
+    page = parseInt(page);
+    limit = parseInt(limit);
+    const offset = (page - 1) * limit;
+
+    let whereClause = "WHERE 1=1";
+    const params = [];
+
+    if (search) {
+        // We can't search by email directly because it's encrypted.
+        // Option 1: Search by hash (exact match only).
+        // Option 2: Search by ID or Role.
+        // For partial email search, we're stuck unless we store a partial hash or searchable plain text (bad for privacy).
+        // Given existing design: Search by exact email (handled by hash) OR generic search on other fields?
+        // Let's assume search input is an email address, verify if it's hashable.
+        // For broad search, maybe client sends specific queries.
+        // Let's support searching by EXACT email via hash.
+        const searchHash = hashEmail(search);
+        whereClause += " AND (email_hash = ? OR role LIKE ? OR id LIKE ?)";
+        params.push(searchHash, `%${search}%`, `%${search}%`);
+    }
+
+    if (filter === 'premium') {
+        whereClause += " AND is_premium = 1";
+    } else if (filter === 'trial') {
+        const nowStr = new Date().toISOString();
+        whereClause += ` AND trial_until > '${nowStr}'`;
+    } else if (filter === 'standard') {
+        whereClause += " AND is_premium = 0";
+    }
+
+    let orderBy = "created_at DESC";
+    if (sort === 'oldest') orderBy = "created_at ASC";
+    if (sort === 'premium') orderBy = "is_premium DESC, created_at DESC";
+    if (sort === 'login') orderBy = "last_login DESC";
+
+    const sql = `
+        SELECT id, email_encrypted, role, is_premium, last_login, created_at, is_verified, trial_until, subscription_plan
+        FROM users
+        ${whereClause}
+        ORDER BY ${orderBy}
+        LIMIT ? OFFSET ?
+    `;
+
+    db.all(sql, [...params, limit, offset], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        // Decrypt emails for admin view
+        const users = rows.map(u => ({
+            ...u,
+            email: decrypt(u.email_encrypted),
+            email_encrypted: undefined // hide encrypted
+        }));
+
+        // Get total count for pagination
+        db.get(`SELECT COUNT(*) as count FROM users ${whereClause}`, params, (err, countRow) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({
+                users,
+                total: countRow.count,
+                pages: Math.ceil(countRow.count / limit),
+                currentPage: page
             });
         });
     });
@@ -89,16 +273,112 @@ router.post('/search', (req, res) => {
     });
 });
 
-// User Premium Status
-router.put('/user/:id/premium', (req, res) => {
+// User Subscription Management
+router.put('/user/:id/subscription', (req, res) => {
     const { id } = req.params;
-    const { is_premium } = req.body; // Expect boolean
+    const { type } = req.body;
+    // Types: 'lifetime', 'annual', 'monthly', 'trial'
+    // Gift Types: 'gift_lifetime', 'gift_annual', 'gift_monthly'
+    // Cancel: 'none'
 
-    db.run("UPDATE users SET is_premium = ? WHERE id = ?", [is_premium ? 1 : 0, id], function (err) {
+    // Fetch existing data to preserve data if needed
+    db.get("SELECT trial_until, subscription_started_at FROM users WHERE id = ?", [id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ error: 'User not found' });
+        if (!row) return res.status(404).json({ error: 'User not found' });
 
-        res.json({ message: 'Premium status updated', is_premium: !!is_premium });
+        let is_premium = 0;
+        let subscription_plan = null;
+        let premium_until = null;
+        let trial_until = row.trial_until; // Preserve trial history by default
+        let subscription_started_at = row.subscription_started_at;
+        let is_gift = 0; // Default off
+
+        const now = new Date();
+
+        switch (type) {
+            case 'lifetime':
+                is_premium = 1;
+                subscription_plan = 'lifetime';
+                if (!subscription_started_at) subscription_started_at = now.toISOString();
+                break;
+            case 'annual':
+                is_premium = 1;
+                subscription_plan = 'annual';
+                now.setFullYear(now.getFullYear() + 1);
+                premium_until = now.toISOString();
+                if (!subscription_started_at) subscription_started_at = new Date().toISOString();
+                break;
+            case 'monthly':
+                is_premium = 1;
+                subscription_plan = 'monthly';
+                now.setMonth(now.getMonth() + 1);
+                premium_until = now.toISOString();
+                if (!subscription_started_at) subscription_started_at = new Date().toISOString();
+                break;
+            case 'trial':
+                is_premium = 1;
+                subscription_plan = 'trial';
+                now.setDate(now.getDate() + 14);
+                premium_until = now.toISOString();
+                trial_until = now.toISOString(); // Set new trial end date
+                is_gift = 0; // Trial is not a 'gift' in the sense of a granted plan
+                break;
+
+            // Gift Types (Granular)
+            case 'gift_lifetime':
+                is_premium = 1;
+                subscription_plan = 'lifetime';
+                is_gift = 1;
+                if (!subscription_started_at) subscription_started_at = now.toISOString();
+                break;
+            case 'gift_annual':
+                is_premium = 1;
+                subscription_plan = 'annual';
+                is_gift = 1;
+                now.setFullYear(now.getFullYear() + 1);
+                premium_until = now.toISOString();
+                if (!subscription_started_at) subscription_started_at = new Date().toISOString();
+                break;
+            case 'gift_monthly':
+                is_premium = 1;
+                subscription_plan = 'monthly';
+                is_gift = 1;
+                now.setMonth(now.getMonth() + 1);
+                premium_until = now.toISOString();
+                if (!subscription_started_at) subscription_started_at = new Date().toISOString();
+                break;
+
+            // Legacy/Generic Gift fallback
+            case 'gift':
+                is_premium = 1;
+                subscription_plan = 'lifetime'; // Default to lifetime if generic
+                is_gift = 1;
+                if (!subscription_started_at) subscription_started_at = now.toISOString();
+                break;
+
+            case 'none':
+                is_premium = 0;
+                subscription_plan = null;
+                premium_until = null;
+                is_gift = 0;
+                break;
+            default:
+                return res.status(400).json({ error: 'Invalid subscription type' });
+        }
+
+        const sql = `
+            UPDATE users 
+            SET is_premium = ?, subscription_plan = ?, premium_until = ?, trial_until = ?, subscription_started_at = ?, is_gift = ?
+            WHERE id = ?
+        `;
+
+        db.run(sql, [is_premium, subscription_plan, premium_until, trial_until, subscription_started_at, is_gift, id], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({
+                message: 'Subscription updated',
+                user: { is_premium, subscription_plan, premium_until, trial_until, subscription_started_at, is_gift }
+            });
+        });
     });
 });
 

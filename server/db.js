@@ -56,6 +56,11 @@ db.serialize(() => {
   addColumnIfNotExists(db, 'users', 'subscription_plan', "TEXT"); // 'monthly', 'annual'
   addColumnIfNotExists(db, 'users', 'subscription_status', "TEXT"); // 'active', 'cancelled', 'expired'
   addColumnIfNotExists(db, 'users', 'premium_until', "TEXT");
+  addColumnIfNotExists(db, 'users', 'reset_password_token', "TEXT");
+  addColumnIfNotExists(db, 'users', 'reset_password_expires', "TEXT");
+  addColumnIfNotExists(db, 'users', 'trial_until', "TEXT");
+  addColumnIfNotExists(db, 'users', 'subscription_started_at', "TEXT");
+  addColumnIfNotExists(db, 'users', 'is_gift', "BOOLEAN DEFAULT 0");
 
   // Platforms
   db.run(`CREATE TABLE IF NOT EXISTS platforms (
@@ -101,6 +106,10 @@ db.serialize(() => {
 
   // Service Provider fields
   addColumnIfNotExists(db, 'incomes', 'distance_km', 'REAL DEFAULT 0');
+
+  // VAT Fields
+  addColumnIfNotExists(db, 'incomes', 'vat_rate', 'REAL DEFAULT 0');
+  addColumnIfNotExists(db, 'incomes', 'vat_amount', 'REAL DEFAULT 0');
 
   // Expenses
   db.run(`CREATE TABLE IF NOT EXISTS expenses (
@@ -177,6 +186,18 @@ db.serialize(() => {
 
   // Verification token index
   db.run("CREATE INDEX IF NOT EXISTS idx_verification_token ON users(verification_token)");
+
+  // Goals Table
+  db.run(`CREATE TABLE IF NOT EXISTS goals (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    type TEXT, -- 'revenue' or 'expense'
+    period TEXT, -- 'year' or 'month'
+    target_amount REAL,
+    period_key TEXT, -- '2025' or '2025-01'
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    UNIQUE(user_id, type, period, period_key)
+  )`);
 });
 
 export default db;

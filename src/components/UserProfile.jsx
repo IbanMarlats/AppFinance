@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { Mail, Calendar, CreditCard, Shield, User, ExternalLink } from 'lucide-react';
+import { Mail, Calendar, CreditCard, Shield, User, ExternalLink, Crown } from 'lucide-react';
 
 export default function UserProfile() {
     const { user, login } = useAuth(); // Need login to update user state if context supports it, or reload.
@@ -12,16 +13,30 @@ export default function UserProfile() {
 
     if (!user) return null;
 
-    const handleSubscribe = async (plan) => {
-        if (!confirm(`Confirmer l'abonnement ${plan === 'annual' ? 'Annuel (70.80€)' : 'Mensuel (8.90€)'} ?`)) return;
+    const [loading, setLoading] = useState(null);
 
+    const handleSubscribe = async (planType) => {
+        setLoading(planType);
         try {
-            const res = await axios.post('http://localhost:3001/api/auth/subscribe', { plan }, { withCredentials: true });
-            alert('Abonnement activé avec succès !');
-            window.location.reload(); // Simple refresh to fetch new user state
+            // Hardcoded Price IDs matching PremiumPage.jsx
+            const priceId = planType === 'monthly'
+                ? 'price_1SfMTkCHELpndPIwMCCvS6bF'
+                : 'price_1SfMUBCHELpndPIwEp9X7vXI';
+
+            const mode = planType === 'monthly' ? 'subscription' : 'payment';
+
+            const res = await axios.post('http://localhost:3001/api/stripe/create-checkout-session', {
+                priceId,
+                mode
+            }, { withCredentials: true });
+
+            if (res.data.url) {
+                window.location.href = res.data.url;
+            }
         } catch (err) {
-            console.error(err);
-            alert("Erreur lors de l'abonnement");
+            console.error("Payment Error:", err);
+            alert("Erreur lors de l'initialisation du paiement.");
+            setLoading(null);
         }
     };
 
@@ -52,8 +67,15 @@ export default function UserProfile() {
             {/* Header Profile Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8">
                 <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-4xl font-bold text-white shadow-lg ring-4 ring-white">
-                        {user.email.charAt(0).toUpperCase()}
+                    <div className="relative">
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-4xl font-bold text-white shadow-lg ring-4 ring-white">
+                            {user.email.charAt(0).toUpperCase()}
+                        </div>
+                        {user.is_premium && (
+                            <div className="absolute -top-1 -right-1 bg-amber-400 text-white rounded-full p-2 ring-4 ring-white shadow-md flex items-center justify-center">
+                                <Crown size={20} fill="currentColor" />
+                            </div>
+                        )}
                     </div>
                     <div className="flex-1 text-center md:text-left">
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">{user.email}</h1>
@@ -100,11 +122,30 @@ export default function UserProfile() {
                                     <div>
                                         <p className="text-sm text-amber-600 font-medium mb-1">Plan actuel</p>
                                         <div className="flex items-center gap-2">
-                                            <p className="text-lg font-bold text-amber-900">Premium {user.subscription_plan === 'annual' ? 'Annuel' : 'Mensuel'}</p>
-                                            <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-200 text-amber-800 border border-amber-300 uppercase tracking-wide">PRO</span>
+                                            <p className="text-lg font-bold text-amber-900">
+                                                {user.trial_until && new Date(user.trial_until) > new Date() ? 'Essai Gratuit' : 'Premium'} {
+                                                    user.subscription_plan === 'lifetime' ? 'À Vie' :
+                                                        user.subscription_plan === 'annual' ? 'Annuel' :
+                                                            'Mensuel'
+                                                }
+                                            </p>
+                                            {user.trial_until && new Date(user.trial_until) > new Date() ? (
+                                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-200 text-blue-800 border border-blue-300 uppercase tracking-wide">ESSAI</span>
+                                            ) : user.is_gift ? (
+                                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-pink-200 text-pink-800 border border-pink-300 uppercase tracking-wide">OFFERT</span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-200 text-amber-800 border border-amber-300 uppercase tracking-wide">PRO</span>
+                                            )}
                                         </div>
                                     </div>
-                                    {user.premium_until && (
+                                    {user.trial_until && new Date(user.trial_until) > new Date() ? (
+                                        <div className="text-right">
+                                            <p className="text-sm text-blue-600 font-medium mb-1">Fin de l'essai le</p>
+                                            <p className="text-sm font-semibold text-blue-900">
+                                                {formatDate(user.trial_until)}
+                                            </p>
+                                        </div>
+                                    ) : user.premium_until && (
                                         <div className="text-right">
                                             <p className="text-sm text-amber-600 font-medium mb-1">Renouvellement le</p>
                                             <p className="text-sm font-semibold text-amber-900">
@@ -147,8 +188,12 @@ export default function UserProfile() {
                                             <span className="text-xs text-slate-500">/mois</span>
                                         </div>
                                     </div>
-                                    <button className="mt-3 w-full py-2 rounded-lg bg-slate-100 text-slate-700 font-medium text-sm group-hover:bg-amber-500 group-hover:text-white transition-colors">
-                                        Choisir ce plan
+                                    <button
+                                        onClick={() => handleSubscribe('monthly')}
+                                        disabled={loading !== null}
+                                        className="mt-3 w-full py-2 rounded-lg bg-slate-100 text-slate-700 font-medium text-sm group-hover:bg-amber-500 group-hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loading === 'monthly' ? 'Chargement...' : 'Choisir ce plan'}
                                     </button>
                                 </div>
 
@@ -170,8 +215,12 @@ export default function UserProfile() {
                                             <div className="text-[10px] text-green-600 font-bold">soit 5.90€ / mois</div>
                                         </div>
                                     </div>
-                                    <button className="mt-3 w-full py-2 rounded-lg bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 transition-colors shadow-sm">
-                                        Choisir ce plan
+                                    <button
+                                        onClick={() => handleSubscribe('annual')}
+                                        disabled={loading !== null}
+                                        className="mt-3 w-full py-2 rounded-lg bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loading === 'annual' ? 'Chargement...' : 'Choisir ce plan'}
                                     </button>
                                 </div>
                             </div>

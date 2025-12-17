@@ -4,6 +4,8 @@ dotenv.config(); // Ensure env vars are loaded
 
 let transporter;
 const PORT = process.env.PORT || 3001;
+// Frontend URL is usually on 5173 for Vite dev
+const CLIENT_URL = 'http://localhost:5173';
 
 export async function createTransporter() {
     if (!transporter) {
@@ -72,6 +74,41 @@ export async function sendVerificationEmail(email, token) {
     } else {
         console.log("----------------------------------------------------------------");
         console.log(" >>> VERIFICATION LINK: " + link);
+        console.log("----------------------------------------------------------------");
+    }
+}
+
+export async function sendPasswordResetEmail(email, token) {
+    // Ensure transporter is ready
+    if (!transporter) await createTransporter();
+
+    const link = `${CLIENT_URL}/reset-password?token=${token}`;
+    const mailOptions = {
+        from: process.env.SMTP_FROM || '"Finance App" <noreply@financeapp.local>',
+        to: email,
+        subject: "Réinitialisation de votre mot de passe",
+        html: `
+            <h1>Réinitialisation de mot de passe</h1>
+            <p>Vous avez demandé à réinitialiser votre mot de passe. Cliquez sur le lien ci-dessous :</p>
+            <a href="${link}">${link}</a>
+            <p>Ce lien est valide pour 1 heure.</p>
+            <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.</p>
+        `,
+    };
+
+    if (transporter) {
+        try {
+            const info = await transporter.sendMail(mailOptions);
+            console.log("Reset Password Message sent: %s", info.messageId);
+            if (info.messageId && !process.env.SMTP_HOST) {
+                console.log("Reset Preview URL: %s", nodemailer.getTestMessageUrl(info));
+            }
+        } catch (error) {
+            console.error("Error sending reset email: ", error);
+        }
+    } else {
+        console.log("----------------------------------------------------------------");
+        console.log(" >>> RESET PASSWORD LINK: " + link);
         console.log("----------------------------------------------------------------");
     }
 }

@@ -4,7 +4,8 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db.js';
 import { encrypt, decrypt, hashEmail, SECRET_KEY } from '../utils/crypto.js';
-import { sendVerificationEmail } from '../utils/email.js';
+import { isValidEmail, isValidPassword } from '../utils/validation.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { logEvent } from '../utils/logger.js';
 
@@ -12,10 +13,20 @@ const router = express.Router();
 
 // Register
 router.post('/register', async (req, res) => {
-    const { email, password, role, newsletter } = req.body;
+    let { email, password, role, newsletter } = req.body;
 
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password required' });
+    }
+
+    email = email.trim();
+
+    if (!isValidEmail(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    if (!isValidPassword(password)) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters long' });
     }
 
     const emailHash = hashEmail(email);
@@ -54,15 +65,33 @@ router.post('/register', async (req, res) => {
 
 // Login
 router.post('/login', (req, res) => {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+    email = email.trim();
+    if (!isValidEmail(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    if (typeof password !== 'string') {
+        return res.status(400).json({ error: 'Invalid password format' });
+    }
+
     const emailHash = hashEmail(email);
 
     db.get("SELECT * FROM users WHERE email_hash = ?", [emailHash], async (err, user) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!user) return res.status(400).json({ error: 'User not found' });
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!user) {
+            return res.status(400).json({ error: 'User not found' });
+        }
 
         const validPassword = await bcrypt.compare(password, user.password_hash);
-        if (!validPassword) return res.status(400).json({ error: 'Invalid password' });
+        if (!validPassword) {
+            return res.status(400).json({ error: 'Invalid password' });
+        }
 
         // Update last_login
         db.run("UPDATE users SET last_login = ? WHERE id = ?", [new Date().toISOString(), user.id]);
@@ -70,7 +99,18 @@ router.post('/login', (req, res) => {
         const token = jwt.sign({ id: user.id, is_verified: !!user.is_verified, role: user.role || 'admin' }, SECRET_KEY, { expiresIn: '30d' });
         res.cookie('token', token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
 
-        res.json({ message: 'Logged in', user: { id: user.id, email: email, is_verified: user.is_verified, role: user.role || 'admin' } });
+        res.json({
+            message: 'Logged in',
+            user: {
+                id: user.id,
+                email: email,
+                is_verified: !!user.is_verified,
+                role: user.role || 'admin',
+                is_premium: !!user.is_premium,
+                subscription_plan: user.subscription_plan,
+                premium_until: user.premium_until
+            }
+        });
     });
 });
 
@@ -128,7 +168,7 @@ router.post('/resend-verification', (req, res) => {
 
 // Get Current User (Session check)
 router.get('/me', authenticateToken, (req, res) => {
-    db.get("SELECT email_encrypted, is_verified, role, is_premium, created_at, subscription_plan, subscription_status, premium_until FROM users WHERE id = ?", [req.user.id], (err, row) => {
+    db.get("SELECT email_encrypted, is_verified, role, is_premium, is_gift, created_at, subscription_plan, subscription_status, premium_until, trial_until FROM users WHERE id = ?", [req.user.id], (err, row) => {
         if (!row) return res.status(404).json({ error: "User not found" });
         try {
             res.json({
@@ -137,10 +177,12 @@ router.get('/me', authenticateToken, (req, res) => {
                 is_verified: !!row.is_verified,
                 role: row.role,
                 is_premium: !!row.is_premium,
+                is_gift: !!row.is_gift,
                 created_at: row.created_at,
                 subscription_plan: row.subscription_plan,
                 subscription_status: row.subscription_status,
-                premium_until: row.premium_until
+                premium_until: row.premium_until,
+                trial_until: row.trial_until
             });
         } catch (e) {
             console.error("Decryption failed for user " + req.user.id + ":", e);
@@ -213,6 +255,60 @@ router.post('/cancel-subscription', authenticateToken, (req, res) => {
             res.json({ message: 'Subscription cancelled' });
         }
     );
+});
+
+// Request Password Reset
+router.post('/request-password-reset', async (req, res) => {
+    let { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email required" });
+    email = email.trim();
+
+    const emailHash = hashEmail(email);
+
+    db.get("SELECT * FROM users WHERE email_hash = ?", [emailHash], (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+        // Security: Don't reveal if user does not exist.
+        if (!user) return res.json({ message: "Si un compte existe, un email a été envoyé." });
+
+        const token = uuidv4();
+        const expires = Date.now() + 3600000; // 1 hour
+
+        db.run("UPDATE users SET reset_password_token = ?, reset_password_expires = ? WHERE id = ?", [token, expires, user.id], (err) => {
+            if (err) return res.status(500).json({ error: "DB Error" });
+
+            try {
+                const realEmail = decrypt(user.email_encrypted);
+                sendPasswordResetEmail(realEmail, token);
+                res.json({ message: "Si un compte existe, un email a été envoyé." });
+            } catch (e) {
+                res.status(500).json({ error: "Email failed" });
+            }
+        });
+    });
+});
+
+// Reset Password
+router.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) return res.status(400).json({ error: "Token and password required" });
+    if (!isValidPassword(newPassword)) return res.status(400).json({ error: "Password must be at least 8 characters" });
+
+    db.get("SELECT * FROM users WHERE reset_password_token = ?", [token], async (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!user) return res.status(400).json({ error: "Invalid or expired token" });
+
+        if (Date.now() > parseInt(user.reset_password_expires)) {
+            return res.status(400).json({ error: "Token expired" });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        db.run("UPDATE users SET password_hash = ?, reset_password_token = NULL, reset_password_expires = NULL WHERE id = ?", [hashedPassword, user.id], (err) => {
+            if (err) return res.status(500).json({ error: "Update failed" });
+            res.json({ message: "Mot de passe modifié avec succès" });
+        });
+    });
 });
 
 export default router;

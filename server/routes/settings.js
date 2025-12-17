@@ -35,6 +35,11 @@ router.get('/', (req, res) => {
 // PUT Settings - Update User Overrides
 router.put('/', (req, res) => {
     const settings = req.body; // { key: value, ... }
+
+    if (!settings || typeof settings !== 'object') {
+        return res.status(400).json({ error: 'Invalid settings format' });
+    }
+
     const userId = req.user.id;
 
     const stmt = db.prepare(`
@@ -50,7 +55,13 @@ router.put('/', (req, res) => {
             // For simplicity, we just save what the user wants. 
             // If they want to "reset", they'd need a specific reset feature or we check vs global.
             // Let's just save.
-            stmt.run(userId, key, String(value));
+
+            // Basic value sanitization to string
+            let safeValue = String(value);
+            // Limit length reasonably
+            if (safeValue.length > 1000) safeValue = safeValue.substring(0, 1000);
+
+            stmt.run(userId, key, safeValue);
         });
         db.run("COMMIT", (err) => {
             if (err) return res.status(500).json({ error: err.message });

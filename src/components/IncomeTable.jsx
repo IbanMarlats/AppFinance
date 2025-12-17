@@ -25,6 +25,7 @@ export default function IncomeTable() {
     const [platformId, setPlatformId] = useState('');
     const [isRecurring, setIsRecurring] = useState(false);
     const [tjm, setTjm] = useState('');
+    const [vatRate, setVatRate] = useState('0');
     const [addFormEcommerce, setAddFormEcommerce] = useState({ cogs: '', shipping_cost: '' });
     const [addFormRole, setAddFormRole] = useState({
         material_cost: '', hours_spent: '',
@@ -49,6 +50,7 @@ export default function IncomeTable() {
             platformId,
             is_recurring: isRecurring,
             tjm: tjm ? parseFloat(tjm) : null,
+            vat_rate: parseFloat(vatRate),
             cogs: addFormEcommerce.cogs ? parseFloat(addFormEcommerce.cogs) : 0,
             shipping_cost: addFormEcommerce.shipping_cost ? parseFloat(addFormEcommerce.shipping_cost) : 0,
 
@@ -64,6 +66,7 @@ export default function IncomeTable() {
         setDesc('');
         setAmount('');
         setTjm('');
+        setVatRate('0');
         setAddFormEcommerce({ cogs: '', shipping_cost: '' });
         setAddFormRole({
             material_cost: '', hours_spent: '',
@@ -225,6 +228,19 @@ export default function IncomeTable() {
                             placeholder="0.00"
                         />
                     </div>
+                    <div>
+                        <label className="label">TVA (%)</label>
+                        <select
+                            value={vatRate}
+                            onChange={e => setVatRate(e.target.value)}
+                            className="input font-medium"
+                        >
+                            <option value="0">0% (Pas de TVA)</option>
+                            <option value="5.5">5.5%</option>
+                            <option value="10">10%</option>
+                            <option value="20">20%</option>
+                        </select>
+                    </div>
 
                     {/* Role Specific Inputs */}
                     {user.role === 'artisan' && (
@@ -378,7 +394,8 @@ export default function IncomeTable() {
                             <th className="px-4 py-3 font-semibold text-slate-500">Date</th>
                             <th className="px-4 py-3 font-semibold text-slate-500">Nom</th>
                             <th className="px-4 py-3 font-semibold text-slate-500">Plateforme</th>
-                            <th className="px-4 py-3 font-semibold text-slate-500 text-right">Montant</th>
+                            <th className="px-4 py-3 font-semibold text-slate-500 text-right">Montant HT</th>
+                            <th className="px-4 py-3 font-semibold text-slate-500 text-right text-slate-400">TVA</th>
                             {!isEcommerce && <th className="px-4 py-3 font-semibold text-slate-500 text-right">TJM</th>}
                             <th className="px-4 py-3 font-semibold text-slate-500 text-right text-red-500">Frais</th>
                             <th className="px-4 py-3 font-semibold text-slate-500 text-right">Net 1</th>
@@ -442,6 +459,9 @@ export default function IncomeTable() {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 text-right font-medium">{inc.amount.toFixed(2)}€</td>
+                                    <td className="px-4 py-3 text-right text-xs text-slate-400">
+                                        {inc.vat_amount ? `+${inc.vat_amount.toFixed(2)}€` : '-'}
+                                    </td>
                                     {!isEcommerce && (
                                         <td className="px-4 py-3 text-right text-slate-500 text-xs">{inc.tjm ? inc.tjm + '€' : '-'}</td>
                                     )}

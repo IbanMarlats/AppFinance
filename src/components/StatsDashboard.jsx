@@ -6,7 +6,11 @@ import ExpenseStats from './ExpenseStats';
 import EcommerceStats from './EcommerceStats';
 import ArtisanStats from './ArtisanStats';
 import CreatorStats from './CreatorStats';
+
 import ServiceStats from './ServiceStats';
+import VatDashboard from './VatDashboard';
+import FiscalSummary from './FiscalSummary';
+import RevenueChart from './RevenueChart';
 
 export default function StatsDashboard() {
     const { incomes, expenses, platforms, settings } = useFinance();
@@ -43,6 +47,20 @@ export default function StatsDashboard() {
             }
         }
     }, [settings]);
+
+    // Fetch Goals for the chart
+    const [goals, setGoals] = useState([]);
+    useEffect(() => {
+        const fetchGoals = async () => {
+            try {
+                const res = await axios.get('http://localhost:3001/api/goals', { withCredentials: true });
+                setGoals(res.data);
+            } catch (err) {
+                console.error("Error fetching goals for stats:", err);
+            }
+        };
+        fetchGoals();
+    }, []);
 
     const toggleSection = async (key) => {
         const newState = { ...visibleSections, [key]: !visibleSections[key] };
@@ -266,46 +284,57 @@ export default function StatsDashboard() {
                 </div>
             </div>
 
+            {/* Revenue Chart */}
+            <RevenueChart data={statsByMonth} goals={goals} year={selectedYear} />
+
+            {/* VAT Dashboard Integration */}
+            <div className="mb-8">
+                <h2 className="text-xl font-bold text-slate-800 mb-6">Suivi TVA & Seuils</h2>
+                <VatDashboard />
+            </div>
+
             {/* Recurring Expenses Table */}
-            {user.is_premium && visibleSections.monthlyFixed && (
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-lg font-bold text-slate-800">Dépenses Mensuelles (Fixes)</h2>
-                        <div className="bg-red-50 border border-red-100 px-3 py-1 rounded-lg flex items-center gap-2">
-                            <span className="text-slate-600 font-medium text-sm">Total:</span>
-                            <span className="text-lg font-bold text-red-600">
-                                {expenses.filter(e => e.is_recurring).reduce((acc, curr) => acc + curr.amount, 0).toFixed(2)}€
-                            </span>
+            {
+                user.is_premium && visibleSections.monthlyFixed && (
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-lg font-bold text-slate-800">Dépenses Mensuelles (Fixes)</h2>
+                            <div className="bg-red-50 border border-red-100 px-3 py-1 rounded-lg flex items-center gap-2">
+                                <span className="text-slate-600 font-medium text-sm">Total:</span>
+                                <span className="text-lg font-bold text-red-600">
+                                    {expenses.filter(e => e.is_recurring).reduce((acc, curr) => acc + curr.amount, 0).toFixed(2)}€
+                                </span>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead>
+                                    <tr className="border-b border-slate-200">
+                                        <th className="px-4 py-3 font-semibold text-slate-500">Nom</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-500">Catégorie</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-500 text-right">Montant</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {expenses.filter(e => e.is_recurring).map(e => (
+                                        <tr key={e.id} className="hover:bg-slate-50">
+                                            <td className="px-4 py-3 font-medium text-slate-900">{e.name}</td>
+                                            <td className="px-4 py-3"><span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs">{e.category || 'Autre'}</span></td>
+                                            <td className="px-4 py-3 text-right font-bold text-red-600">{e.amount.toFixed(2)}€</td>
+                                        </tr>
+                                    ))}
+                                    {expenses.filter(e => e.is_recurring).length === 0 && (
+                                        <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-400 italic">Aucune charge fixe définie</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-200">
-                                    <th className="px-4 py-3 font-semibold text-slate-500">Nom</th>
-                                    <th className="px-4 py-3 font-semibold text-slate-500">Catégorie</th>
-                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">Montant</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {expenses.filter(e => e.is_recurring).map(e => (
-                                    <tr key={e.id} className="hover:bg-slate-50">
-                                        <td className="px-4 py-3 font-medium text-slate-900">{e.name}</td>
-                                        <td className="px-4 py-3"><span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs">{e.category || 'Autre'}</span></td>
-                                        <td className="px-4 py-3 text-right font-bold text-red-600">{e.amount.toFixed(2)}€</td>
-                                    </tr>
-                                ))}
-                                {expenses.filter(e => e.is_recurring).length === 0 && (
-                                    <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-400 italic">Aucune charge fixe définie</td></tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Expense Stats by Category */}
-            {user.is_premium && visibleSections.expenses && <ExpenseStats year={selectedYear} />}
+            {user.is_premium && visibleSections.expenses && <ExpenseStats expenses={filteredExpenses} />}
 
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
                 <h2 className="text-lg font-bold text-slate-800 mb-6">Bilan par Mois</h2>
@@ -343,67 +372,76 @@ export default function StatsDashboard() {
                 </div>
             </div>
 
-            {user.is_premium && visibleSections.platforms && (
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
-                    <h2 className="text-lg font-bold text-slate-800 mb-6">Détail Revenus par Plateforme</h2>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-200">
-                                    <th className="px-4 py-3 font-semibold text-slate-500">Plateforme</th>
-                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">CA Brut</th>
-                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">Net Interm.</th>
-                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">Net Final</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {Object.values(byPlatform).map((item, idx) => (
-                                    <tr key={idx} className="hover:bg-slate-50">
-                                        <td className="px-4 py-3"><span className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-700 font-medium">{item.name}</span></td>
-                                        <td className="px-4 py-3 text-right text-slate-600">{item.gross.toFixed(2)}€</td>
-                                        <td className="px-4 py-3 text-right text-slate-500">{item.net1.toFixed(2)}€</td>
-                                        <td className="px-4 py-3 text-right font-bold text-emerald-600">{item.final.toFixed(2)}€</td>
+            {
+                user.is_premium && visibleSections.platforms && (
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+                        <h2 className="text-lg font-bold text-slate-800 mb-6">Détail Revenus par Plateforme</h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead>
+                                    <tr className="border-b border-slate-200">
+                                        <th className="px-4 py-3 font-semibold text-slate-500">Plateforme</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-500 text-right">CA Brut</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-500 text-right">Net Interm.</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-500 text-right">Net Final</th>
                                     </tr>
-                                ))}
-                                {Object.keys(byPlatform).length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400 italic">Aucune donnée</td></tr>}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-            {user.is_premium && visibleSections.annualHistory && (
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-800 mb-6">Bilan par Année</h2>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-200">
-                                    <th className="px-4 py-3 font-semibold text-slate-500">Année</th>
-                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">Recettes (Net)</th>
-                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">Dépenses</th>
-                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">Bénéfice / Déficit</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {sortedYears.map(year => {
-                                    const st = statsByYear[year];
-                                    return (
-                                        <tr key={year} className="hover:bg-slate-50">
-                                            <td className="px-4 py-3 font-bold text-slate-800">{year}</td>
-                                            <td className="px-4 py-3 text-right font-medium text-emerald-600">+{st.income.toFixed(2)}€</td>
-                                            <td className="px-4 py-3 text-right font-medium text-red-600">-{st.expense.toFixed(2)}€</td>
-                                            <td className={`px-4 py-3 text-right font-bold ${st.profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                                                {st.profit > 0 ? '+' : ''}{st.profit.toFixed(2)}€
-                                            </td>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {Object.values(byPlatform).map((item, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50">
+                                            <td className="px-4 py-3"><span className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-700 font-medium">{item.name}</span></td>
+                                            <td className="px-4 py-3 text-right text-slate-600">{item.gross.toFixed(2)}€</td>
+                                            <td className="px-4 py-3 text-right text-slate-500">{item.net1.toFixed(2)}€</td>
+                                            <td className="px-4 py-3 text-right font-bold text-emerald-600">{item.final.toFixed(2)}€</td>
                                         </tr>
-                                    );
-                                })}
-                                {sortedYears.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400 italic">Aucune donnée</td></tr>}
-                            </tbody>
-                        </table>
+                                    ))}
+                                    {Object.keys(byPlatform).length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400 italic">Aucune donnée</td></tr>}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
+            {
+                user.is_premium && visibleSections.annualHistory && (
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h2 className="text-lg font-bold text-slate-800 mb-6">Bilan par Année</h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead>
+                                    <tr className="border-b border-slate-200">
+                                        <th className="px-4 py-3 font-semibold text-slate-500">Année</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-500 text-right">Recettes (Net)</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-500 text-right">Dépenses</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-500 text-right">Bénéfice / Déficit</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {sortedYears.map(year => {
+                                        const st = statsByYear[year];
+                                        return (
+                                            <tr key={year} className="hover:bg-slate-50">
+                                                <td className="px-4 py-3 font-bold text-slate-800">{year}</td>
+                                                <td className="px-4 py-3 text-right font-medium text-emerald-600">+{st.income.toFixed(2)}€</td>
+                                                <td className="px-4 py-3 text-right font-medium text-red-600">-{st.expense.toFixed(2)}€</td>
+                                                <td className={`px-4 py-3 text-right font-bold ${st.profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                                                    {st.profit > 0 ? '+' : ''}{st.profit.toFixed(2)}€
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    {sortedYears.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400 italic">Aucune donnée</td></tr>}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )
+            }
+            {/* Fiscal Summary */}
+            <div className="mt-8">
+                <FiscalSummary />
+            </div>
+
         </div>
     );
 }

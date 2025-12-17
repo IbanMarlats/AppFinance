@@ -1,13 +1,9 @@
 import { useFinance } from '../context/FinanceContext';
 
-export default function ExpenseStats({ year }) {
-    const { expenses, categories } = useFinance();
+export default function ExpenseStats({ expenses }) {
+    const { categories } = useFinance();
 
-    const filteredExpenses = year
-        ? expenses.filter(e => new Date(e.date).getFullYear() === year)
-        : expenses;
-
-    const stats = filteredExpenses.reduce((acc, curr) => {
+    const stats = expenses.reduce((acc, curr) => {
         const cat = curr.category || 'Autre';
         if (!acc[cat]) acc[cat] = 0;
         acc[cat] += curr.amount;
@@ -19,48 +15,44 @@ export default function ExpenseStats({ year }) {
     const sortedStats = Object.entries(stats).sort((a, b) => b[1] - a[1]); // Sort by amount desc
 
     return (
-        <div className="card" style={{ marginTop: '2rem' }}>
-            <h2>Répartition par Catégorie</h2>
-            <div className="table-container">
-                <table style={{ marginTop: '1rem' }}>
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+            <h2 className="text-lg font-bold text-slate-800 mb-6">Répartition par Catégorie</h2>
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
                     <thead>
-                        <tr>
-                            <th>Catégorie</th>
-                            <th>Montant</th>
-                            <th>%</th>
-                            <th>Barre</th>
+                        <tr className="border-b border-slate-200">
+                            <th className="px-4 py-3 font-semibold text-slate-500">Catégorie</th>
+                            <th className="px-4 py-3 font-semibold text-slate-500 text-right">Montant</th>
+                            <th className="px-4 py-3 font-semibold text-slate-500 text-right">%</th>
+                            <th className="px-4 py-3 font-semibold text-slate-500 w-1/3">Barre</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-slate-100">
                         {sortedStats.map(([catName, amount]) => {
                             const percent = total > 0 ? (amount / total) * 100 : 0;
-                            const catColor = categories.find(c => c.name === catName)?.color || 'var(--accent)';
+                            const catColor = categories.find(c => c.name === catName)?.color || '#6366f1'; // Default Indigo
 
                             return (
-                                <tr key={catName}>
-                                    <td style={{ fontWeight: 'bold' }}>{catName}</td>
-                                    <td>{amount.toFixed(2)}€</td>
-                                    <td style={{ color: 'var(--text-muted)' }}>{percent.toFixed(1)}%</td>
-                                    <td style={{ width: '40%' }}>
-                                        <div style={{
-                                            backgroundColor: '#e5e7eb',
-                                            borderRadius: '9999px',
-                                            height: '0.5rem',
-                                            width: '100%',
-                                            overflow: 'hidden'
-                                        }}>
-                                            <div style={{
-                                                backgroundColor: catColor,
-                                                height: '100%',
-                                                width: `${percent}%`
-                                            }} />
+                                <tr key={catName} className="hover:bg-slate-50">
+                                    <td className="px-4 py-3 font-medium text-slate-900">{catName}</td>
+                                    <td className="px-4 py-3 text-right font-medium text-slate-700">{amount.toFixed(2)}€</td>
+                                    <td className="px-4 py-3 text-right text-slate-500">{percent.toFixed(1)}%</td>
+                                    <td className="px-4 py-3">
+                                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full"
+                                                style={{
+                                                    width: `${percent}%`,
+                                                    backgroundColor: catColor
+                                                }}
+                                            />
                                         </div>
                                     </td>
                                 </tr>
                             );
                         })}
                         {sortedStats.length === 0 && (
-                            <tr><td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Pas de données</td></tr>
+                            <tr><td colSpan="4" className="px-4 py-8 text-center text-slate-400 italic">Pas de données pour cette période</td></tr>
                         )}
                     </tbody>
                 </table>

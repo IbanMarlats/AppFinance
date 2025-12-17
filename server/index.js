@@ -20,6 +20,8 @@ import categoryRoutes from './routes/categories.js';
 import adminRoutes from './routes/admin.js';
 import settingsRoutes from './routes/settings.js';
 import analyticsRoutes from './routes/analytics.js';
+import goalsRoutes from './routes/goals.js';
+import stripeRoutes from './routes/stripe.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -46,6 +48,8 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/goals', goalsRoutes);
+app.use('/api/stripe', stripeRoutes);
 
 // Public Settings Route (Used in auth/registration possibly? Or general app config)
 // The original code had /api/settings as authenticated, but also a GET /api/settings. 

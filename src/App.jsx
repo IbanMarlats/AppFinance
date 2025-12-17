@@ -16,61 +16,73 @@ import StatsDashboard from './components/StatsDashboard';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import VerifyEmail from './components/auth/VerifyEmail';
+import ForgotPassword from './components/auth/ForgotPassword';
 import AdminDashboard from './components/AdminDashboard';
 import AdminLogs from './components/AdminLogs';
+import GoalsDashboard from './components/GoalsDashboard';
 
 import UnverifiedBanner from './components/UnverifiedBanner';
+import CookieConsent from './components/CookieConsent';
+
+import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
+import PremiumPage from './components/PremiumPage';
+import PaymentResult from './components/PaymentResult';
 
 function FinanceApp() {
   const [tab, setTabState] = useState(() => localStorage.getItem('active_tab') || 'income');
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const setTab = (newTab) => {
+    // If we are on a route like /premium, navigation to a tab should maybe redirect to / ?
+    // Or we keep simple hash-like tab navigation on home path.
+    if (location.pathname !== '/') {
+      navigate('/');
+    }
     setTabState(newTab);
     localStorage.setItem('active_tab', newTab);
   };
+
   const { user, logout, loading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
+  const [isReset, setIsReset] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
   // Track Visitor
-  useEffect(() => {
-    const trackVisit = async () => {
-      let visitorId = localStorage.getItem('visitor_id');
-      if (!visitorId) {
-        visitorId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
-        localStorage.setItem('visitor_id', visitorId);
-      }
+  const trackVisit = async () => {
+    if (localStorage.getItem('cookie_consent') !== 'true') return;
+    let visitorId = localStorage.getItem('visitor_id');
+    if (!visitorId) {
+      visitorId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('visitor_id', visitorId);
+    }
+    try {
+      await axios.post('http://localhost:3001/api/analytics/visit', { visitor_id: visitorId });
+    } catch (err) {
+      console.error("Analytics error:", err);
+    }
+  };
 
-      try {
-        await axios.post('http://localhost:3001/api/analytics/visit', { visitor_id: visitorId });
-      } catch (err) {
-        // Silently fail for analytics
-        console.error("Analytics error:", err);
-      }
-    };
+  useEffect(() => {
     trackVisit();
   }, []);
 
   useEffect(() => {
-    if (window.location.pathname.startsWith('/api/auth/verify/')) {
-      // In local flow, maybe we want a frontend route like /verify/:token
-      // But backend sends link to /api/auth/verify/:token directly?
-      // Ah, the plan said backend sends link. But usually we want frontend to handle it.
-      // Let's assume the user clicks the link from console which points to backend API directly.
-      // Backend API returns HTML. So we don't need frontend route for that if backend handles it.
-      // Wait, my backend implementation returns "<h1>Email Verified!</h1>".
-      // So actually, no frontend change needed for verification logic itself if we rely on backend response.
-
-      // HOWEVER, the user might want a cleaner experience. 
-      // For now, let's stick to the backend returning the HTML as implemented in index.js step 40.
-      // "res.send("<h1>Email Verified!</h1><p>You can close this window...</p>");"
-      // So I don't strictly need a React route for this specific implementation.
+    // Check for verify token or reset token...
+    // Reset logic handled below or via route? 
+    // Existing logic seems to handle password reset via query params on same page.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('token') && window.location.pathname === '/reset-password') {
+      setIsLogin(false);
+      setIsReset(true);
     }
   }, []);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500">Chargement...</div>;
 
   if (!user) {
+    // Public Routes or Auth Screen
+    // Maybe allow /premium to be seen public? No, need user to link payment.
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
@@ -78,9 +90,10 @@ function FinanceApp() {
             <h1 className="text-3xl font-bold text-slate-900 mb-2">Finance<span className="text-indigo-600">AI</span></h1>
             <p className="text-slate-500">Gestion financière simplifiée pour pros</p>
           </div>
-
-          {isLogin ? (
-            <Login onSwitch={() => setIsLogin(false)} />
+          {isReset ? (
+            <ForgotPassword onDone={() => { setIsReset(false); setIsLogin(true); navigate('/'); }} />
+          ) : isLogin ? (
+            <Login onSwitch={() => setIsLogin(false)} onForgot={() => setIsReset(true)} />
           ) : (
             <Register onSwitch={() => setIsLogin(true)} />
           )}
@@ -90,51 +103,63 @@ function FinanceApp() {
   }
 
   // Rewrite Active Tab check
-  // The Layout sends 'dashboard' for stats, 'settings' for config
   const handleTabChange = (newTab) => {
-    // Map layout IDs to internal tabs if needed, or unify them.
-    // Layout: dashboard, income, expense, admin, profile, settings
-    // Internal: stats, income, expense, admin, profile, config
-
     if (newTab === 'dashboard') setTab('stats');
     else if (newTab === 'settings') setTab('config');
     else setTab(newTab);
   };
 
-  // Reverse map for layout active state
   const getLayoutTab = () => {
+    // If we are on /premium, maybe highlight none or special?
+    if (location.pathname === '/premium') return 'premium'; // Add this to Sidebar?
+
     if (tab === 'stats') return 'dashboard';
     if (tab === 'config') return 'settings';
     return tab;
   };
 
-  return (
-    <FinanceProvider>
-      <Layout activeTab={getLayoutTab()} onTabChange={handleTabChange}>
-        <UnverifiedBanner />
+  // Main Content
+  const MainDashboard = () => (
+    <Layout activeTab={getLayoutTab()} onTabChange={handleTabChange}>
+      <UnverifiedBanner />
 
-        {tab === 'income' && <IncomeTable />}
-        {tab === 'expense' && <ExpenseTable />}
-        {tab === 'config' && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-800">Configuration</h2>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <PlatformManager />
-              <CategoryManager />
-              <div className="xl:col-span-2">
-                <SettingsManager />
-              </div>
+      {tab === 'income' && <IncomeTable />}
+      {tab === 'expense' && <ExpenseTable />}
+      {tab === 'config' && (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-slate-800">Configuration</h2>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <PlatformManager />
+            <CategoryManager />
+            <div className="xl:col-span-2">
+              <SettingsManager />
             </div>
           </div>
-        )}
-        {tab === 'stats' && <StatsDashboard />}
-        {tab === 'profile' && <UserProfile />}
-        {tab === 'admin' && user.role === 'admin' && <AdminDashboard />}
+        </div>
+      )}
+      {tab === 'stats' && <StatsDashboard />}
+      {tab === 'goals' && <GoalsDashboard />}
+      {tab === 'profile' && <UserProfile />}
+      {tab === 'admin' && user.role === 'admin' && <AdminDashboard />}
+      {tab === 'audit' && user.role === 'admin' && <AdminLogs />}
+    </Layout>
+  );
 
-        {/* Audit Logs moved inside Admin or separate? Layout doesn't have Audit button by default yet. */}
-        {/* Let's keep audit accessible via admin dashboard probably, or separate tab if link exists. */}
-        {tab === 'audit' && user.role === 'admin' && <AdminLogs />}
-      </Layout>
+  return (
+    <FinanceProvider>
+      <Routes>
+        <Route path="/" element={<MainDashboard />} />
+        <Route path="/premium" element={
+          <Layout activeTab="premium" onTabChange={(t) => { navigate('/'); handleTabChange(t); }}>
+            <PremiumPage />
+          </Layout>
+        } />
+        <Route path="/success" element={<PaymentResult />} />
+        <Route path="/cancel" element={<PaymentResult />} />
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <CookieConsent onAccept={trackVisit} />
     </FinanceProvider>
   );
 }

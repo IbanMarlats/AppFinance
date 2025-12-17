@@ -16,6 +16,18 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
     const { name, amount, date, category, is_recurring } = req.body;
+
+    // Validation
+    if (!name || typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
+    if (isNaN(parseFloat(amount))) {
+        return res.status(400).json({ error: 'Amount must be a number' });
+    }
+    if (date && isNaN(Date.parse(date))) {
+        return res.status(400).json({ error: 'Invalid date format' });
+    }
+
     const id = uuidv4();
     db.run("INSERT INTO expenses (id, name, amount, date, category, is_recurring, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [id, name, amount, date, category, is_recurring ? 1 : 0, req.user.id],
@@ -28,6 +40,18 @@ router.post('/', (req, res) => {
 
 router.put('/:id', (req, res) => {
     const { name, amount, date, category, is_recurring } = req.body;
+
+    // Validation
+    if (!name || typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
+    if (isNaN(parseFloat(amount))) {
+        return res.status(400).json({ error: 'Amount must be a number' });
+    }
+    if (date && isNaN(Date.parse(date))) {
+        return res.status(400).json({ error: 'Invalid date format' });
+    }
+
     db.run("UPDATE expenses SET name = ?, amount = ?, date = ?, category = ?, is_recurring = ? WHERE id = ? AND user_id = ?",
         [name, amount, date, category, is_recurring ? 1 : 0, req.params.id, req.user.id],
         function (err) {
