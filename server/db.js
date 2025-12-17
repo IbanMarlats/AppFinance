@@ -53,6 +53,9 @@ db.serialize(() => {
   addColumnIfNotExists(db, 'users', 'last_login', "TEXT");
   addColumnIfNotExists(db, 'users', 'created_at', "TEXT DEFAULT CURRENT_TIMESTAMP");
   addColumnIfNotExists(db, 'users', 'newsletter', "BOOLEAN DEFAULT 1");
+  addColumnIfNotExists(db, 'users', 'subscription_plan', "TEXT"); // 'monthly', 'annual'
+  addColumnIfNotExists(db, 'users', 'subscription_status', "TEXT"); // 'active', 'cancelled', 'expired'
+  addColumnIfNotExists(db, 'users', 'premium_until', "TEXT");
 
   // Platforms
   db.run(`CREATE TABLE IF NOT EXISTS platforms (
@@ -81,7 +84,23 @@ db.serialize(() => {
   )`);
   addColumnIfNotExists(db, 'incomes', 'user_id', 'TEXT REFERENCES users(id)');
   addColumnIfNotExists(db, 'incomes', 'is_recurring', 'BOOLEAN DEFAULT 0');
+  addColumnIfNotExists(db, 'incomes', 'is_recurring', 'BOOLEAN DEFAULT 0');
   addColumnIfNotExists(db, 'incomes', 'tjm', 'REAL');
+  addColumnIfNotExists(db, 'incomes', 'cogs', 'REAL DEFAULT 0'); // Cost of Goods Sold
+  addColumnIfNotExists(db, 'incomes', 'shipping_cost', 'REAL DEFAULT 0');
+  addColumnIfNotExists(db, 'incomes', 'status', "TEXT DEFAULT 'confirmed'"); // confirmed, refunded, quote_sent, quote_signed
+
+  // Artisan / Maker fields
+  addColumnIfNotExists(db, 'incomes', 'material_cost', 'REAL DEFAULT 0');
+  addColumnIfNotExists(db, 'incomes', 'hours_spent', 'REAL DEFAULT 0');
+
+  // Creator / Influencer fields
+  addColumnIfNotExists(db, 'incomes', 'channel_source', 'TEXT'); // Youtube, Twitch, Sponsor...
+  addColumnIfNotExists(db, 'incomes', 'income_type', "TEXT DEFAULT 'active'"); // active, passive
+  addColumnIfNotExists(db, 'incomes', 'invoice_date', 'TEXT'); // For payment delay calc
+
+  // Service Provider fields
+  addColumnIfNotExists(db, 'incomes', 'distance_km', 'REAL DEFAULT 0');
 
   // Expenses
   db.run(`CREATE TABLE IF NOT EXISTS expenses (
@@ -144,6 +163,17 @@ db.serialize(() => {
     ip_address TEXT,
     created_at DATETIME
   )`);
+
+  // Site Visits (Unique Visitors)
+  db.run(`CREATE TABLE IF NOT EXISTS site_visits (
+    id TEXT PRIMARY KEY,
+    visitor_id TEXT,
+    ip_hash TEXT,
+    visited_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // Index for fast counting
+  db.run("CREATE INDEX IF NOT EXISTS idx_site_visits_visitor ON site_visits(visitor_id)");
 
   // Verification token index
   db.run("CREATE INDEX IF NOT EXISTS idx_verification_token ON users(verification_token)");

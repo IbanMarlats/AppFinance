@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { FinanceProvider } from './context/FinanceContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import IncomeTable from './components/IncomeTable';
@@ -7,6 +8,7 @@ import CategoryManager from './components/CategoryManager';
 import PlatformManager from './components/PlatformManager';
 import SettingsManager from './components/SettingsManager';
 import UserProfile from './components/UserProfile';
+import Layout from './components/Layout';
 
 // ...
 
@@ -30,6 +32,25 @@ function FinanceApp() {
   const [isLogin, setIsLogin] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Track Visitor
+  useEffect(() => {
+    const trackVisit = async () => {
+      let visitorId = localStorage.getItem('visitor_id');
+      if (!visitorId) {
+        visitorId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem('visitor_id', visitorId);
+      }
+
+      try {
+        await axios.post('http://localhost:3001/api/analytics/visit', { visitor_id: visitorId });
+      } catch (err) {
+        // Silently fail for analytics
+        console.error("Analytics error:", err);
+      }
+    };
+    trackVisit();
+  }, []);
+
   useEffect(() => {
     if (window.location.pathname.startsWith('/api/auth/verify/')) {
       // In local flow, maybe we want a frontend route like /verify/:token
@@ -47,104 +68,73 @@ function FinanceApp() {
     }
   }, []);
 
-  if (loading) return <div className="container">Chargement...</div>;
-
-  // Clean URL check for potentially other frontend routes? 
-  // For now let's keep it simple.
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500">Chargement...</div>;
 
   if (!user) {
     return (
-      <div className="container" style={{ maxWidth: '400px', marginTop: '10vh' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '2rem' }}>Finance Micro</h1>
-        {isLogin ? (
-          <Login onSwitch={() => setIsLogin(false)} />
-        ) : (
-          <Register onSwitch={() => setIsLogin(true)} />
-        )}
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Finance<span className="text-indigo-600">AI</span></h1>
+            <p className="text-slate-500">Gestion financière simplifiée pour pros</p>
+          </div>
+
+          {isLogin ? (
+            <Login onSwitch={() => setIsLogin(false)} />
+          ) : (
+            <Register onSwitch={() => setIsLogin(true)} />
+          )}
+        </div>
       </div>
     );
   }
 
+  // Rewrite Active Tab check
+  // The Layout sends 'dashboard' for stats, 'settings' for config
+  const handleTabChange = (newTab) => {
+    // Map layout IDs to internal tabs if needed, or unify them.
+    // Layout: dashboard, income, expense, admin, profile, settings
+    // Internal: stats, income, expense, admin, profile, config
+
+    if (newTab === 'dashboard') setTab('stats');
+    else if (newTab === 'settings') setTab('config');
+    else setTab(newTab);
+  };
+
+  // Reverse map for layout active state
+  const getLayoutTab = () => {
+    if (tab === 'stats') return 'dashboard';
+    if (tab === 'config') return 'settings';
+    return tab;
+  };
+
   return (
     <FinanceProvider>
-      <div className="container">
+      <Layout activeTab={getLayoutTab()} onTabChange={handleTabChange}>
         <UnverifiedBanner />
 
-        <header className="app-header">
-          <div className="header-title">
-            <h1>Finance Micro</h1>
-            <p>Gestion simplifiée</p>
-          </div>
-          <button onClick={logout} className="logout-btn">
-            Déconnexion
-          </button>
-        </header>
-
-        <nav className="nav">
-          <button
-            className={`nav-item ${tab === 'income' ? 'active' : ''}`}
-            onClick={() => setTab('income')}
-          >
-            Revenus
-          </button>
-          <button
-            className={`nav-item ${tab === 'expense' ? 'active' : ''}`}
-            onClick={() => setTab('expense')}
-          >
-            Dépenses
-          </button>
-          <button
-            className={`nav-item ${tab === 'config' ? 'active' : ''}`}
-            onClick={() => setTab('config')}
-          >
-            Configuration
-          </button>
-          <button
-            className={`nav-item ${tab === 'stats' ? 'active' : ''}`}
-            onClick={() => setTab('stats')}
-          >
-            Statistiques
-          </button>
-          <button
-            className={`nav-item ${tab === 'profile' ? 'active' : ''}`}
-            onClick={() => setTab('profile')}
-          >
-            Profil
-          </button>
-          {user.role === 'admin' && (
-            <>
-              <button
-                className={`nav-item ${tab === 'admin' ? 'active' : ''}`}
-                onClick={() => setTab('admin')}
-              >
-                Admin
-              </button>
-              <button
-                className={`nav-item ${tab === 'audit' ? 'active' : ''}`}
-                onClick={() => setTab('audit')}
-              >
-                Audit
-              </button>
-            </>
-          )}
-        </nav>
-
-        <main>
-          {tab === 'income' && <IncomeTable />}
-          {tab === 'expense' && <ExpenseTable />}
-          {tab === 'config' && (
-            <div className="grid gap-4">
+        {tab === 'income' && <IncomeTable />}
+        {tab === 'expense' && <ExpenseTable />}
+        {tab === 'config' && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-slate-800">Configuration</h2>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <PlatformManager />
               <CategoryManager />
-              <SettingsManager />
+              <div className="xl:col-span-2">
+                <SettingsManager />
+              </div>
             </div>
-          )}
-          {tab === 'stats' && <StatsDashboard />}
-          {tab === 'profile' && <UserProfile />}
-          {tab === 'admin' && user.role === 'admin' && <AdminDashboard />}
-          {tab === 'audit' && user.role === 'admin' && <AdminLogs />}
-        </main>
-      </div>
+          </div>
+        )}
+        {tab === 'stats' && <StatsDashboard />}
+        {tab === 'profile' && <UserProfile />}
+        {tab === 'admin' && user.role === 'admin' && <AdminDashboard />}
+
+        {/* Audit Logs moved inside Admin or separate? Layout doesn't have Audit button by default yet. */}
+        {/* Let's keep audit accessible via admin dashboard probably, or separate tab if link exists. */}
+        {tab === 'audit' && user.role === 'admin' && <AdminLogs />}
+      </Layout>
     </FinanceProvider>
   );
 }

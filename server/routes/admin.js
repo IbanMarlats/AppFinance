@@ -46,7 +46,23 @@ router.get('/stats', (req, res) => {
             return acc;
         }, {});
 
-        res.json({ totalUsers, premiumUsers, activeUsers, activePremiumUsers, newsletterUsers, usersByRole });
+        // Get unique visitors count
+        db.get("SELECT COUNT(DISTINCT visitor_id) as uniqueVisitors FROM site_visits", [], (err, visitRow) => {
+            if (err) {
+                console.error("Error fetching visit stats:", err);
+                // Return stats without visitors if error, or just 0
+                return res.json({ totalUsers, premiumUsers, activeUsers, activePremiumUsers, newsletterUsers, usersByRole, uniqueVisitors: 0 });
+            }
+            res.json({
+                totalUsers,
+                premiumUsers,
+                activeUsers,
+                activePremiumUsers,
+                newsletterUsers,
+                usersByRole,
+                uniqueVisitors: visitRow ? visitRow.uniqueVisitors : 0
+            });
+        });
     });
 });
 

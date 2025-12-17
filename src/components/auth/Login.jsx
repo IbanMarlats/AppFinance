@@ -18,37 +18,39 @@ export default function Login({ onSwitch }) {
     };
 
     return (
-        <div className="card auth-card">
-            <h2>Connexion</h2>
-            <form onSubmit={handleSubmit} className="grid">
+        <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-xl max-w-md w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h2 className="text-2xl font-bold text-slate-800 mb-6 text-center">Connexion</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label>Email</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
                     <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                         required
                     />
                 </div>
                 <div>
-                    <label>Mot de passe</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Mot de passe</label>
                     <input
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                         required
                     />
                 </div>
-                {error && <div style={{ color: 'var(--danger)' }}>{error}</div>}
-                <button type="submit" className="primary" style={{ width: '100%', marginTop: '1rem' }}>
+                {error && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 text-center">{error}</div>}
+                <button type="submit" className="w-full py-2.5 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-sm focus:ring-4 focus:ring-indigo-200">
                     Se connecter
                 </button>
             </form>
-            <p style={{ marginTop: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <p className="mt-6 text-center text-sm text-slate-500">
                 Pas de compte ?{' '}
-                <span onClick={onSwitch} style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}>
+                <button onClick={onSwitch} className="text-indigo-600 font-bold hover:text-indigo-700 hover:underline">
                     S'inscrire
-                </span>
+                </button>
             </p>
         </div>
     );

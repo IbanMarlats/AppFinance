@@ -23,3 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+FAKE_USERS.md
+seed_fake_users.js
+
+server/database.sqlite
+server/database.db
+

@@ -130,45 +130,59 @@ export default function AdminDashboard() {
     if (error) return <div style={{ color: 'var(--danger)' }}>{error}</div>;
 
     return (
-        <div className="card">
-            <h2 style={{ marginBottom: '1.5rem' }}>Tableau de Bord Admin</h2>
+        <div className="p-6">
+            <h2 className="text-2xl font-bold text-slate-800 mb-6">Tableau de Bord Admin</h2>
 
             {/* User Search Section */}
-            <div className="card" style={{ marginBottom: '2rem', border: '1px solid #e5e7eb', boxShadow: 'none' }}>
-                <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Gestion Utilisateur</h3>
-                <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Gestion Utilisateur</h3>
+                <form onSubmit={handleSearch} className="flex gap-4 mb-4">
                     <input
                         type="email"
                         placeholder="Rechercher par email..."
                         value={searchEmail}
                         onChange={e => setSearchEmail(e.target.value)}
-                        style={{ flex: 1 }}
+                        className="flex-1 input"
                     />
-                    <button type="submit" disabled={searchLoading} className="primary btn-action">
+                    <button type="submit" disabled={searchLoading} className="btn-primary whitespace-nowrap">
                         {searchLoading ? '...' : 'Chercher'}
                     </button>
                 </form>
 
-                {searchError && <div style={{ color: 'var(--danger)', marginBottom: '1rem' }}>{searchError}</div>}
+                {searchError && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm mb-4">{searchError}</div>}
 
                 {searchedUser && (
-                    <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <h4 style={{ margin: 0, fontSize: '1.1rem' }}>{searchedUser.email}</h4>
-                            <span className="badge" style={{ textTransform: 'capitalize' }}>{searchedUser.role}</span>
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div className="flex justify-between items-center mb-4">
+                            <h4 className="font-bold text-slate-800 text-lg">{searchedUser.email}</h4>
+                            <span className="px-3 py-1 bg-white border border-slate-200 rounded-full text-xs font-medium uppercase tracking-wide text-slate-600">
+                                {searchedUser.role}
+                            </span>
                         </div>
-                        <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.9rem', color: '#475569', marginBottom: '1rem' }}>
-                            <div>Inscrit le: {searchedUser.created_at ? new Date(searchedUser.created_at).toLocaleDateString() : 'N/A'}</div>
-                            <div>Dernière connexion: {searchedUser.last_login ? new Date(searchedUser.last_login).toLocaleDateString() : 'Jamais'}</div>
-                            <div>Statut: {searchedUser.is_premium ?
-                                <span style={{ color: '#16a34a', fontWeight: 'bold' }}>Premium ★</span> :
-                                <span style={{ color: '#64748b' }}>Standard</span>}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-600 mb-4">
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">Inscrit le:</span>
+                                <span>{searchedUser.created_at ? new Date(searchedUser.created_at).toLocaleDateString() : 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">Dernière connexion:</span>
+                                <span>{searchedUser.last_login ? new Date(searchedUser.last_login).toLocaleDateString() : 'Jamais'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">Statut:</span>
+                                {searchedUser.is_premium ? (
+                                    <span className="text-emerald-600 font-bold flex items-center gap-1">Premium ★</span>
+                                ) : (
+                                    <span className="text-slate-500">Standard</span>
+                                )}
                             </div>
                         </div>
                         <button
                             onClick={togglePremium}
-                            className={searchedUser.is_premium ? 'danger btn-action' : 'primary btn-action'}
-                            style={{ width: '100%' }}
+                            className={`w-full py-2 rounded-lg font-bold transition-colors ${searchedUser.is_premium
+                                ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                }`}
                         >
                             {searchedUser.is_premium ? 'Retirer Premium' : 'Passer Premium'}
                         </button>
@@ -177,148 +191,153 @@ export default function AdminDashboard() {
             </div>
 
             {/* Global Settings Section */}
-            <div className="card" style={{ marginBottom: '2rem', border: '1px solid #e5e7eb', boxShadow: 'none' }}>
-                <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Configuration Globale</h3>
-                <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Configuration Globale</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem', color: '#64748b' }}>Seuil TVA (€)</label>
+                        <label className="label">Seuil TVA (€)</label>
                         <input
                             type="number"
                             value={localSettings.tva_threshold || ''}
                             onChange={e => handleSettingsChange('tva_threshold', e.target.value)}
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem', color: '#64748b' }}>Seuil Micro-Entreprise (€)</label>
+                        <label className="label">Seuil Micro-Entreprise (€)</label>
                         <input
                             type="number"
                             value={localSettings.micro_threshold || ''}
                             onChange={e => handleSettingsChange('micro_threshold', e.target.value)}
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem', color: '#64748b' }}>% URSSAF (Freelance)</label>
+                        <label className="label">% URSSAF (Freelance)</label>
                         <input
                             type="number"
                             step="0.1"
                             value={localSettings.urssaf_freelance || ''}
                             onChange={e => handleSettingsChange('urssaf_freelance', e.target.value)}
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem', color: '#64748b' }}>% URSSAF (E-commerce)</label>
+                        <label className="label">% URSSAF (E-commerce)</label>
                         <input
                             type="number"
                             step="0.1"
                             value={localSettings.urssaf_ecommerce || ''}
                             onChange={e => handleSettingsChange('urssaf_ecommerce', e.target.value)}
+                            className="input"
                         />
                     </div>
                 </div>
-                <button onClick={saveSettings} disabled={settingsLoading} className="primary btn-action" style={{ width: 'auto' }}>
+                <button onClick={saveSettings} disabled={settingsLoading} className="btn-primary">
                     {settingsLoading ? 'Sauvegarde...' : 'Sauvegarder les Paliers'}
                 </button>
             </div>
 
             {/* Newsletter Sending Section */}
-            <div className="card" style={{ marginBottom: '2rem', border: '1px solid #e5e7eb', boxShadow: 'none' }}>
-                <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Envoyer une Newsletter</h3>
-                <div style={{ display: 'grid', gap: '1rem' }}>
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Envoyer une Newsletter</h3>
+                <div className="space-y-4">
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem', color: '#64748b' }}>Sujet</label>
+                        <label className="label">Sujet</label>
                         <input
                             type="text"
                             placeholder="Sujet de la newsletter"
                             value={newsletterSubject}
                             onChange={e => setNewsletterSubject(e.target.value)}
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem', color: '#64748b' }}>Message</label>
+                        <label className="label">Message</label>
                         <textarea
                             placeholder="Contenu du message..."
                             value={newsletterMessage}
                             onChange={e => setNewsletterMessage(e.target.value)}
                             rows={6}
-                            style={{
-                                width: '100%',
-                                padding: '0.75rem',
-                                borderRadius: '0.5rem',
-                                border: '1px solid #d1d5db',
-                                resize: 'vertical'
-                            }}
+                            className="textarea w-full"
                         />
                     </div>
                     {newsletterStatus && (
-                        <div style={{
-                            padding: '0.75rem',
-                            borderRadius: '0.5rem',
-                            backgroundColor: newsletterStatus.type === 'success' ? '#f0fdf4' : newsletterStatus.type === 'error' ? '#fef2f2' : '#eff6ff',
-                            color: newsletterStatus.type === 'success' ? '#166534' : newsletterStatus.type === 'error' ? '#991b1b' : '#1e40af',
-                            fontSize: '0.9rem'
-                        }}>
+                        <div className={`p-3 rounded-lg text-sm border ${newsletterStatus.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' :
+                            newsletterStatus.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' :
+                                'bg-blue-50 text-blue-700 border-blue-200'
+                            }`}>
                             {newsletterStatus.msg}
                         </div>
                     )}
                     <button
                         onClick={sendNewsletter}
                         disabled={newsletterSending || !newsletterSubject || !newsletterMessage}
-                        className="primary btn-action"
-                        style={{ width: 'auto' }}
+                        className="btn-primary"
                     >
                         {newsletterSending ? 'Envoi en cours...' : 'Envoyer la Newsletter'}
                     </button>
                 </div>
             </div>
 
-            <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                <div style={{ padding: '1.5rem', backgroundColor: '#eff6ff', borderRadius: '8px', border: '1px solid #dbeafe', textAlign: 'center' }}>
-                    <div style={{ color: '#1e40af', fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.5rem' }}>Utilisateurs Total</div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1e3a8a' }}>{stats.totalUsers}</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 text-center">
+                    <div className="text-blue-800 font-bold text-lg mb-2">Utilisateurs Total</div>
+                    <div className="text-4xl font-bold text-blue-900">{stats.totalUsers}</div>
                 </div>
-                <div style={{ padding: '1.5rem', backgroundColor: '#fff7ed', borderRadius: '8px', border: '1px solid #ffedd5', textAlign: 'center' }}>
-                    <div style={{ color: '#9a3412', fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.5rem' }}>Utilisateurs Premium</div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#c2410c' }}>{stats.premiumUsers}</div>
+                <div className="bg-sky-50 p-6 rounded-xl border border-sky-100 text-center">
+                    <div className="text-sky-800 font-bold text-lg mb-2">Visiteurs Uniques</div>
+                    <div className="text-4xl font-bold text-sky-900">{stats.uniqueVisitors || 0}</div>
                 </div>
-                <div style={{ padding: '1.5rem', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #dcfce7', textAlign: 'center' }}>
-                    <div style={{ color: '#166534', fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.5rem' }}>Utilisateurs Actifs <small>(3 mois)</small></div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#15803d' }}>{stats.activeUsers}</div>
+                <div className="bg-orange-50 p-6 rounded-xl border border-orange-100 text-center">
+                    <div className="text-orange-800 font-bold text-lg mb-2">Utilisateurs Premium</div>
+                    <div className="text-4xl font-bold text-orange-900">{stats.premiumUsers}</div>
                 </div>
-                <div style={{ padding: '1.5rem', backgroundColor: '#fafafa', borderRadius: '8px', border: '1px solid #e5e5e5', textAlign: 'center' }}>
-                    <div style={{ color: '#404040', fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.5rem' }}>Taux Conversion Premium</div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: getConversionColor(calculateConversionRate()) }}>
+                <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100 text-center">
+                    <div className="text-emerald-800 font-bold text-lg mb-2">Utilisateurs Actifs <small className="text-sm font-normal">(3 mois)</small></div>
+                    <div className="text-4xl font-bold text-emerald-900">{stats.activeUsers}</div>
+                </div>
+                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
+                    <div className="text-slate-800 font-bold text-lg mb-2">Taux Conversion Premium</div>
+                    <div className="text-4xl font-bold" style={{ color: getConversionColor(calculateConversionRate()) }}>
                         {calculateConversionRate()}%
                     </div>
                 </div>
-                <div style={{ padding: '1.5rem', backgroundColor: '#fdf4ff', borderRadius: '8px', border: '1px solid #f0abfc', textAlign: 'center' }}>
-                    <div style={{ color: '#86198f', fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.5rem' }}>Abonnés Newsletter</div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#a21caf' }}>{stats.newsletterUsers || 0}</div>
+                <div className="bg-fuchsia-50 p-6 rounded-xl border border-fuchsia-100 text-center">
+                    <div className="text-fuchsia-800 font-bold text-lg mb-2">Abonnés Newsletter</div>
+                    <div className="text-4xl font-bold text-fuchsia-900">{stats.newsletterUsers || 0}</div>
                 </div>
             </div>
 
             {/* Admin Logs moved to separate tab */}
 
-            <h3 style={{ marginBottom: '1rem', marginTop: '2rem' }}>Répartition par Rôle</h3>
-            <div className="table-container">
-                <table>
+            <h3 className="text-lg font-bold text-slate-800 mb-4 mt-8">Répartition par Rôle</h3>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <table className="w-full text-left text-sm">
                     <thead>
-                        <tr>
-                            <th>Rôle</th>
-                            <th>Nombre d'utilisateurs</th>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                            <th className="px-6 py-4 font-semibold text-slate-500">Rôle</th>
+                            <th className="px-6 py-4 font-semibold text-slate-500 text-right">Nombre d'utilisateurs</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-slate-100">
                         {Object.entries(stats.usersByRole || {}).map(([role, count]) => (
-                            <tr key={role}>
-                                <td style={{ textTransform: 'capitalize' }}>
-                                    <span className="badge" style={{
-                                        backgroundColor: role === 'admin' ? '#fef2f2' : role === 'ecommerce' ? '#f0fdf4' : '#eff6ff',
-                                        color: role === 'admin' ? '#991b1b' : role === 'ecommerce' ? '#166534' : '#1e40af'
-                                    }}>
-                                        {role}
+                            <tr key={role} className="hover:bg-slate-50">
+                                <td className="px-6 py-4 capitalize">
+                                    <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wide border ${role === 'admin' ? 'bg-red-50 text-red-700 border-red-200' :
+                                            role === 'ecommerce' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                'bg-blue-50 text-blue-700 border-blue-200'
+                                        }`}>
+                                        {role === 'admin' ? 'Administrateur' :
+                                            role === 'freelance' ? 'Freelance' :
+                                                role === 'artisan' ? 'Artisan / Créateur' :
+                                                    role === 'creator' ? 'Créateur de Contenu' :
+                                                        role === 'field_service' ? 'Prestataire Terrain' :
+                                                            role === 'ecommerce' ? 'E-commerce' :
+                                                                role === 'perso' ? 'Personnel' : role}
                                     </span>
                                 </td>
-                                <td style={{ fontWeight: 'bold' }}>{count}</td>
+                                <td className="px-6 py-4 text-right font-bold text-slate-700">{count}</td>
                             </tr>
                         ))}
                     </tbody>

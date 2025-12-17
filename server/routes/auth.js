@@ -128,7 +128,7 @@ router.post('/resend-verification', (req, res) => {
 
 // Get Current User (Session check)
 router.get('/me', authenticateToken, (req, res) => {
-    db.get("SELECT email_encrypted, is_verified, role, is_premium, created_at FROM users WHERE id = ?", [req.user.id], (err, row) => {
+    db.get("SELECT email_encrypted, is_verified, role, is_premium, created_at, subscription_plan, subscription_status, premium_until FROM users WHERE id = ?", [req.user.id], (err, row) => {
         if (!row) return res.status(404).json({ error: "User not found" });
         try {
             res.json({
@@ -137,7 +137,10 @@ router.get('/me', authenticateToken, (req, res) => {
                 is_verified: !!row.is_verified,
                 role: row.role,
                 is_premium: !!row.is_premium,
-                created_at: row.created_at
+                created_at: row.created_at,
+                subscription_plan: row.subscription_plan,
+                subscription_status: row.subscription_status,
+                premium_until: row.premium_until
             });
         } catch (e) {
             console.error("Decryption failed for user " + req.user.id + ":", e);
@@ -147,6 +150,69 @@ router.get('/me', authenticateToken, (req, res) => {
             res.status(401).json({ error: "Session invalid (Decryption failed)" });
         }
     });
+});
+
+// Update subscription
+router.post('/subscribe', authenticateToken, (req, res) => {
+    const { plan } = req.body; // 'monthly' or 'annual'
+    if (!['monthly', 'annual'].includes(plan)) {
+        return res.status(400).json({ error: 'Invalid plan' });
+    }
+
+    // Mock payment success logic
+    const duration = plan === 'annual' ? 365 : 30;
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + duration);
+
+    db.run(
+        `UPDATE users 
+         SET is_premium = 1, 
+             subscription_plan = ?, 
+             subscription_status = 'active',
+             premium_until = ?  -- Assuming we add this column or rely on is_premium for now. 
+             -- Wait, I didn't add 'premium_until' to DB schema in previous step? 
+             -- Let's check DB schema. 'is_premium' exists. 'premium_until' was used in frontend mock but maybe not in DB?
+             -- Actually UserProfile.jsx uses user.premium_until. 
+             -- Let's add premium_until to DB schema if it's missing or use it if it's there.
+             -- Checking DB.js content from previous reads...
+         WHERE id = ?`,
+        [plan, expiryDate.toISOString(), req.user.id],
+        function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+
+            // Return updated user info
+            db.get("SELECT id, email_encrypted, email_hash, role, is_premium, subscription_plan, subscription_status FROM users WHERE id = ?", [req.user.id], (err, row) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({
+                    ...row,
+                    // Mock returning the date we just set, if DB didn't have column it might be lost (but I will add it now if needed)
+                    premium_until: expiryDate.toISOString()
+                });
+            });
+        }
+    );
+});
+
+// Cancel subscription
+router.post('/cancel-subscription', authenticateToken, (req, res) => {
+    // In a real app, this would be "cancel at period end".
+    // For demo/MVP, we'll revert to free immediately or set status to cancelled.
+    // Let's set status to cancelled but keep is_premium until expiry logic runs (which we don't have).
+    // The user likely wants to see the "Subscribe" buttons again to test.
+    // So let's force remove premium for testing purposes, or allow 're-subscribe'.
+
+    db.run(
+        `UPDATE users 
+         SET is_premium = 0, 
+             subscription_status = 'cancelled',
+             premium_until = NULL 
+         WHERE id = ?`,
+        [req.user.id],
+        function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Subscription cancelled' });
+        }
+    );
 });
 
 export default router;

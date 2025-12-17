@@ -3,6 +3,10 @@ import axios from 'axios';
 import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../context/AuthContext';
 import ExpenseStats from './ExpenseStats';
+import EcommerceStats from './EcommerceStats';
+import ArtisanStats from './ArtisanStats';
+import CreatorStats from './CreatorStats';
+import ServiceStats from './ServiceStats';
 
 export default function StatsDashboard() {
     const { incomes, expenses, platforms, settings } = useFinance();
@@ -171,120 +175,91 @@ export default function StatsDashboard() {
     const sortedYears = [...yearsSet].sort((a, b) => b - a);
 
     return (
-        <div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem', alignItems: 'center' }}>
-                <div style={{ position: 'relative', marginRight: '1rem' }}>
+        <div className="p-6">
+            <div className="flex flex-col md:flex-row justify-end items-center gap-4 mb-6">
+                <div className="relative">
                     <button
                         onClick={() => setShowConfig(!showConfig)}
-                        className="btn"
-                        style={{ backgroundColor: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db' }}
+                        className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2 text-sm font-medium shadow-sm"
                     >
                         ⚙️ Personnaliser
                     </button>
                     {showConfig && (
-                        <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            right: 0,
-                            backgroundColor: 'white',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '0.5rem',
-                            padding: '1rem',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                            zIndex: 10,
-                            width: '250px'
-                        }}>
-                            <h4 style={{ marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold' }}>Afficher/Masquer</h4>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: user.is_premium ? 'pointer' : 'not-allowed', opacity: user.is_premium ? 1 : 0.6 }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={user.is_premium && visibleSections.monthlyFixed}
-                                        onChange={() => user.is_premium && toggleSection('monthlyFixed')}
-                                        disabled={!user.is_premium}
-                                        style={{ marginRight: '0.5rem' }}
-                                    />
-                                    Dépenses Mensuelles
-                                    {!user.is_premium && <span className="text-xs bg-amber-100 text-amber-800 px-1.5 rounded ml-2">Premium</span>}
-                                </label>
-                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: user.is_premium ? 'pointer' : 'not-allowed', opacity: user.is_premium ? 1 : 0.6 }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={user.is_premium && visibleSections.expenses}
-                                        onChange={() => user.is_premium && toggleSection('expenses')}
-                                        disabled={!user.is_premium}
-                                        style={{ marginRight: '0.5rem' }}
-                                    />
-                                    Répartition par Catégorie
-                                    {!user.is_premium && <span className="text-xs bg-amber-100 text-amber-800 px-1.5 rounded ml-2">Premium</span>}
-                                </label>
-                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: user.is_premium ? 'pointer' : 'not-allowed', opacity: user.is_premium ? 1 : 0.6 }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={user.is_premium && visibleSections.platforms}
-                                        onChange={() => user.is_premium && toggleSection('platforms')}
-                                        disabled={!user.is_premium}
-                                        style={{ marginRight: '0.5rem' }}
-                                    />
-                                    Détail par Plateforme
-                                    {!user.is_premium && <span className="text-xs bg-amber-100 text-amber-800 px-1.5 rounded ml-2">Premium</span>}
-                                </label>
-                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: user.is_premium ? 'pointer' : 'not-allowed', opacity: user.is_premium ? 1 : 0.6 }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={user.is_premium && visibleSections.annualHistory}
-                                        onChange={() => user.is_premium && toggleSection('annualHistory')}
-                                        disabled={!user.is_premium}
-                                        style={{ marginRight: '0.5rem' }}
-                                    />
-                                    Bilan par Année
-                                    {!user.is_premium && <span className="text-xs bg-amber-100 text-amber-800 px-1.5 rounded ml-2">Premium</span>}
-                                </label>
+                        <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-20 p-4">
+                            <h4 className="font-bold text-sm text-slate-800 mb-3 border-b border-slate-100 pb-2">Affichage</h4>
+                            <div className="space-y-2">
+                                {[
+                                    { key: 'monthlyFixed', label: 'Dépenses Mensuelles' },
+                                    { key: 'expenses', label: 'Répartition Catégories' },
+                                    { key: 'platforms', label: 'Détail Plateformes' },
+                                    { key: 'annualHistory', label: 'Bilan Annuel' },
+                                ].map(({ key, label }) => (
+                                    <label key={key} className={`flex items-center gap-2 text-sm ${user.is_premium ? 'cursor-pointer text-slate-700 hover:text-indigo-600' : 'cursor-not-allowed text-slate-400'}`}>
+                                        <input
+                                            type="checkbox"
+                                            checked={user.is_premium && visibleSections[key]}
+                                            onChange={() => user.is_premium && toggleSection(key)}
+                                            disabled={!user.is_premium}
+                                            className="rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                        />
+                                        <span>{label}</span>
+                                        {!user.is_premium && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase">PREMIUM</span>}
+                                    </label>
+                                ))}
                             </div>
                         </div>
                     )}
                 </div>
 
-                <span style={{ marginRight: '1rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Année :</span>
-                <select
-                    value={selectedYear}
-                    onChange={e => setSelectedYear(parseInt(e.target.value))}
-                    style={{
-                        fontSize: '1rem',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '0.375rem',
-                        border: '1px solid #d1d5db',
-                        backgroundColor: '#fff',
-                        cursor: 'pointer'
-                    }}
-                >
-                    {availableYears.map(year => (
-                        <option key={year} value={year}>{year}</option>
-                    ))}
-                </select>
+                <div className="flex items-center gap-2 bg-white rounded-lg border border-slate-300 p-1">
+                    <span className="text-sm font-semibold text-slate-500 px-2">Année :</span>
+                    <select
+                        value={selectedYear}
+                        onChange={e => setSelectedYear(parseInt(e.target.value))}
+                        className="text-sm border-none focus:ring-0 text-slate-700 font-bold bg-transparent cursor-pointer py-1 pr-8"
+                    >
+                        {availableYears.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
+            {/* Premium Role Dashboards */}
+            {user.role === 'ecommerce' && user.is_premium && (
+                <EcommerceStats year={selectedYear} />
+            )}
+            {user.role === 'artisan' && (
+                <ArtisanStats year={selectedYear} />
+            )}
+            {user.role === 'creator' && (
+                <CreatorStats year={selectedYear} />
+            )}
+            {user.role === 'field_service' && (
+                <ServiceStats year={selectedYear} />
+            )}
+
             {/* Global Summary Card */}
-            <div className="card" style={{ marginBottom: '2rem', border: '1px solid var(--border)' }}>
-                <h2 style={{ marginBottom: '1rem' }}>Bilan Global</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', textAlign: 'center' }}>
-                    <div style={{ padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '8px' }}>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9em' }}>Total Recettes (Net)</div>
-                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: 'var(--success)' }}>{globalTotal.income.toFixed(2)}€</div>
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8">
+                <h2 className="text-xl font-bold text-slate-800 mb-6">Bilan Global {selectedYear}</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                        <div className="text-sm font-medium text-emerald-600 mb-1">Total Recettes (Net)</div>
+                        <div className="text-2xl font-bold text-emerald-700">{globalTotal.income.toFixed(2)}€</div>
                     </div>
-                    <div style={{ padding: '1rem', backgroundColor: '#fef2f2', borderRadius: '8px' }}>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9em' }}>Total Dépenses</div>
-                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: 'var(--danger)' }}>{globalTotal.expense.toFixed(2)}€</div>
+                    <div className="p-4 rounded-xl bg-red-50 border border-red-100">
+                        <div className="text-sm font-medium text-red-600 mb-1">Total Dépenses</div>
+                        <div className="text-2xl font-bold text-red-700">{globalTotal.expense.toFixed(2)}€</div>
                     </div>
-                    <div style={{ padding: '1rem', backgroundColor: globalTotal.profit >= 0 ? '#eff6ff' : '#fff1f2', borderRadius: '8px' }}>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9em' }}>Résultat Net</div>
-                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: globalTotal.profit >= 0 ? '#3b82f6' : 'var(--danger)' }}>
+                    <div className={`p-4 rounded-xl border ${globalTotal.profit >= 0 ? 'bg-blue-50 border-blue-100' : 'bg-orange-50 border-orange-100'}`}>
+                        <div className={`text-sm font-medium mb-1 ${globalTotal.profit >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>Résultat Net</div>
+                        <div className={`text-2xl font-bold ${globalTotal.profit >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>
                             {globalTotal.profit > 0 ? '+' : ''}{globalTotal.profit.toFixed(2)}€
                         </div>
                     </div>
-                    <div style={{ padding: '1rem', backgroundColor: '#faf5ff', borderRadius: '8px' }}>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9em' }}>TJM Moyen</div>
-                        <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: 'var(--accent)' }}>
+                    <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
+                        <div className="text-sm font-medium text-indigo-600 mb-1">TJM Moyen</div>
+                        <div className="text-2xl font-bold text-indigo-700">
                             {avgTjm > 0 ? Math.round(avgTjm) + '€' : '-'}
                         </div>
                     </div>
@@ -293,34 +268,35 @@ export default function StatsDashboard() {
 
             {/* Recurring Expenses Table */}
             {user.is_premium && visibleSections.monthlyFixed && (
-                <div className="card" style={{ marginBottom: '2rem' }}>
-                    <div className="flex justify-between" style={{ marginBottom: '1rem' }}>
-                        <h2>Dépenses Mensuelles (Fixes)</h2>
-                        <div className="badge" style={{ fontSize: '1.2em', padding: '0.5em 1em', backgroundColor: '#fef2f2', border: '1px solid #fecaca' }}>
-                            Total: <span style={{ color: 'var(--danger)' }}>
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-lg font-bold text-slate-800">Dépenses Mensuelles (Fixes)</h2>
+                        <div className="bg-red-50 border border-red-100 px-3 py-1 rounded-lg flex items-center gap-2">
+                            <span className="text-slate-600 font-medium text-sm">Total:</span>
+                            <span className="text-lg font-bold text-red-600">
                                 {expenses.filter(e => e.is_recurring).reduce((acc, curr) => acc + curr.amount, 0).toFixed(2)}€
                             </span>
                         </div>
                     </div>
-                    <div className="table-container">
-                        <table>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
                             <thead>
-                                <tr>
-                                    <th>Nom</th>
-                                    <th>Catégorie</th>
-                                    <th>Montant</th>
+                                <tr className="border-b border-slate-200">
+                                    <th className="px-4 py-3 font-semibold text-slate-500">Nom</th>
+                                    <th className="px-4 py-3 font-semibold text-slate-500">Catégorie</th>
+                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">Montant</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-slate-100">
                                 {expenses.filter(e => e.is_recurring).map(e => (
-                                    <tr key={e.id}>
-                                        <td>{e.name}</td>
-                                        <td><span className="badge">{e.category || 'Autre'}</span></td>
-                                        <td style={{ color: 'var(--danger)' }}>{e.amount.toFixed(2)}€</td>
+                                    <tr key={e.id} className="hover:bg-slate-50">
+                                        <td className="px-4 py-3 font-medium text-slate-900">{e.name}</td>
+                                        <td className="px-4 py-3"><span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs">{e.category || 'Autre'}</span></td>
+                                        <td className="px-4 py-3 text-right font-bold text-red-600">{e.amount.toFixed(2)}€</td>
                                     </tr>
                                 ))}
                                 {expenses.filter(e => e.is_recurring).length === 0 && (
-                                    <tr><td colSpan="3" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Aucune charge fixe définie</td></tr>
+                                    <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-400 italic">Aucune charge fixe définie</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -331,19 +307,19 @@ export default function StatsDashboard() {
             {/* Expense Stats by Category */}
             {user.is_premium && visibleSections.expenses && <ExpenseStats year={selectedYear} />}
 
-            <div className="card">
-                <h2>Bilan par Mois</h2>
-                <div className="table-container">
-                    <table>
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+                <h2 className="text-lg font-bold text-slate-800 mb-6">Bilan par Mois</h2>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
                         <thead>
-                            <tr>
-                                <th>Mois</th>
-                                <th>Recettes (Net)</th>
-                                <th>Dépenses</th>
-                                <th>Bénéfice / Déficit</th>
+                            <tr className="border-b border-slate-200">
+                                <th className="px-4 py-3 font-semibold text-slate-500">Mois</th>
+                                <th className="px-4 py-3 font-semibold text-slate-500 text-right">Recettes (Net)</th>
+                                <th className="px-4 py-3 font-semibold text-slate-500 text-right">Dépenses</th>
+                                <th className="px-4 py-3 font-semibold text-slate-500 text-right">Bénéfice / Déficit</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-slate-100">
                             {Object.entries(statsByMonth).sort().reverse().map(([month, item]) => {
                                 const [y, m] = month.split('-');
                                 const dateObj = new Date(parseInt(y), parseInt(m) - 1);
@@ -351,77 +327,78 @@ export default function StatsDashboard() {
                                 const capitalizedDate = displayDate.charAt(0).toUpperCase() + displayDate.slice(1);
 
                                 return (
-                                    <tr key={month}>
-                                        <td style={{ fontWeight: '500' }}>{capitalizedDate}</td>
-                                        <td style={{ color: 'var(--success)' }}>+{item.income.toFixed(2)}€</td>
-                                        <td style={{ color: 'var(--danger)' }}>-{item.expense.toFixed(2)}€</td>
-                                        <td style={{ fontWeight: 'bold', color: item.profit >= 0 ? '#3b82f6' : 'var(--danger)' }}>
+                                    <tr key={month} className="hover:bg-slate-50">
+                                        <td className="px-4 py-3 font-medium text-slate-900 capitalize">{capitalizedDate}</td>
+                                        <td className="px-4 py-3 text-right font-medium text-emerald-600">+{item.income.toFixed(2)}€</td>
+                                        <td className="px-4 py-3 text-right font-medium text-red-600">-{item.expense.toFixed(2)}€</td>
+                                        <td className={`px-4 py-3 text-right font-bold ${item.profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                                             {item.profit > 0 ? '+' : ''}{item.profit.toFixed(2)}€
                                         </td>
                                     </tr>
                                 );
                             })}
-                            {Object.keys(statsByMonth).length === 0 && <tr><td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Aucune donnée</td></tr>}
+                            {Object.keys(statsByMonth).length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400 italic">Aucune donnée pour cette année</td></tr>}
                         </tbody>
                     </table>
                 </div>
             </div>
 
             {user.is_premium && visibleSections.platforms && (
-                <div className="card">
-                    <h2>Détail Revenus par Plateforme</h2>
-                    <div className="table-container">
-                        <table>
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+                    <h2 className="text-lg font-bold text-slate-800 mb-6">Détail Revenus par Plateforme</h2>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
                             <thead>
-                                <tr>
-                                    <th>Plateforme</th>
-                                    <th>CA Brut</th>
-                                    <th>Net Interm.</th>
-                                    <th>Net Final</th>
+                                <tr className="border-b border-slate-200">
+                                    <th className="px-4 py-3 font-semibold text-slate-500">Plateforme</th>
+                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">CA Brut</th>
+                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">Net Interm.</th>
+                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">Net Final</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-slate-100">
                                 {Object.values(byPlatform).map((item, idx) => (
-                                    <tr key={idx}>
-                                        <td><span className="badge">{item.name}</span></td>
-                                        <td>{item.gross.toFixed(2)}€</td>
-                                        <td style={{ opacity: 0.8 }}>{item.net1.toFixed(2)}€</td>
-                                        <td style={{ color: 'var(--success)', fontWeight: 'bold' }}>{item.final.toFixed(2)}€</td>
+                                    <tr key={idx} className="hover:bg-slate-50">
+                                        <td className="px-4 py-3"><span className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-700 font-medium">{item.name}</span></td>
+                                        <td className="px-4 py-3 text-right text-slate-600">{item.gross.toFixed(2)}€</td>
+                                        <td className="px-4 py-3 text-right text-slate-500">{item.net1.toFixed(2)}€</td>
+                                        <td className="px-4 py-3 text-right font-bold text-emerald-600">{item.final.toFixed(2)}€</td>
                                     </tr>
                                 ))}
+                                {Object.keys(byPlatform).length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400 italic">Aucune donnée</td></tr>}
                             </tbody>
                         </table>
                     </div>
                 </div>
             )}
             {user.is_premium && visibleSections.annualHistory && (
-                <div className="card">
-                    <h2>Bilan par Année</h2>
-                    <div className="table-container">
-                        <table>
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h2 className="text-lg font-bold text-slate-800 mb-6">Bilan par Année</h2>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
                             <thead>
-                                <tr>
-                                    <th>Année</th>
-                                    <th>Recettes (Net)</th>
-                                    <th>Dépenses</th>
-                                    <th>Bénéfice / Déficit</th>
+                                <tr className="border-b border-slate-200">
+                                    <th className="px-4 py-3 font-semibold text-slate-500">Année</th>
+                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">Recettes (Net)</th>
+                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">Dépenses</th>
+                                    <th className="px-4 py-3 font-semibold text-slate-500 text-right">Bénéfice / Déficit</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-slate-100">
                                 {sortedYears.map(year => {
                                     const st = statsByYear[year];
                                     return (
-                                        <tr key={year}>
-                                            <td style={{ fontWeight: 'bold' }}>{year}</td>
-                                            <td style={{ color: 'var(--success)' }}>+{st.income.toFixed(2)}€</td>
-                                            <td style={{ color: 'var(--danger)' }}>-{st.expense.toFixed(2)}€</td>
-                                            <td style={{ fontWeight: 'bold', color: st.profit >= 0 ? '#3b82f6' : 'var(--danger)' }}>
+                                        <tr key={year} className="hover:bg-slate-50">
+                                            <td className="px-4 py-3 font-bold text-slate-800">{year}</td>
+                                            <td className="px-4 py-3 text-right font-medium text-emerald-600">+{st.income.toFixed(2)}€</td>
+                                            <td className="px-4 py-3 text-right font-medium text-red-600">-{st.expense.toFixed(2)}€</td>
+                                            <td className={`px-4 py-3 text-right font-bold ${st.profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                                                 {st.profit > 0 ? '+' : ''}{st.profit.toFixed(2)}€
                                             </td>
                                         </tr>
                                     );
                                 })}
-                                {sortedYears.length === 0 && <tr><td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Aucune donnée</td></tr>}
+                                {sortedYears.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400 italic">Aucune donnée</td></tr>}
                             </tbody>
                         </table>
                     </div>

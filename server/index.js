@@ -19,6 +19,7 @@ import expenseRoutes from './routes/expenses.js';
 import categoryRoutes from './routes/categories.js';
 import adminRoutes from './routes/admin.js';
 import settingsRoutes from './routes/settings.js';
+import analyticsRoutes from './routes/analytics.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -44,6 +45,7 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Public Settings Route (Used in auth/registration possibly? Or general app config)
 // The original code had /api/settings as authenticated, but also a GET /api/settings. 
