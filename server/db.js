@@ -61,6 +61,8 @@ db.serialize(() => {
   addColumnIfNotExists(db, 'users', 'trial_until', "TEXT");
   addColumnIfNotExists(db, 'users', 'subscription_started_at', "TEXT");
   addColumnIfNotExists(db, 'users', 'is_gift', "BOOLEAN DEFAULT 0");
+  addColumnIfNotExists(db, 'users', 'is_subject_vat', "BOOLEAN DEFAULT 0");
+  addColumnIfNotExists(db, 'users', 'vat_start_date', "TEXT");
 
   // Platforms
   db.run(`CREATE TABLE IF NOT EXISTS platforms (
@@ -73,6 +75,7 @@ db.serialize(() => {
   )`);
   addColumnIfNotExists(db, 'platforms', 'user_id', 'TEXT REFERENCES users(id)');
   addColumnIfNotExists(db, 'platforms', 'fixed_fee', 'REAL DEFAULT 0');
+  addColumnIfNotExists(db, 'platforms', 'fee_vat_rate', 'REAL DEFAULT 0');
 
   // Incomes
   db.run(`CREATE TABLE IF NOT EXISTS incomes (
@@ -90,6 +93,7 @@ db.serialize(() => {
   addColumnIfNotExists(db, 'incomes', 'user_id', 'TEXT REFERENCES users(id)');
   addColumnIfNotExists(db, 'incomes', 'is_recurring', 'BOOLEAN DEFAULT 0');
   addColumnIfNotExists(db, 'incomes', 'is_recurring', 'BOOLEAN DEFAULT 0');
+  addColumnIfNotExists(db, 'incomes', 'recurring_end_date', 'TEXT');
   addColumnIfNotExists(db, 'incomes', 'tjm', 'REAL');
   addColumnIfNotExists(db, 'incomes', 'cogs', 'REAL DEFAULT 0'); // Cost of Goods Sold
   addColumnIfNotExists(db, 'incomes', 'shipping_cost', 'REAL DEFAULT 0');
@@ -110,6 +114,9 @@ db.serialize(() => {
   // VAT Fields
   addColumnIfNotExists(db, 'incomes', 'vat_rate', 'REAL DEFAULT 0');
   addColumnIfNotExists(db, 'incomes', 'vat_amount', 'REAL DEFAULT 0');
+
+  // Tax Category (BNC / BIC)
+  addColumnIfNotExists(db, 'incomes', 'tax_category', "TEXT DEFAULT 'bnc'");
 
   // Expenses
   db.run(`CREATE TABLE IF NOT EXISTS expenses (
@@ -154,7 +161,9 @@ db.serialize(() => {
       const defaults = {
         tva_threshold: 36800,
         micro_threshold: 77700,
-        urssaf_freelance: 25,
+        urssaf_freelance: 25, // Fallback/Legacy
+        urssaf_freelance_bnc: 23.1,
+        urssaf_freelance_bic: 21.2,
         urssaf_ecommerce: 12.3
       };
       Object.entries(defaults).forEach(([key, val]) => {

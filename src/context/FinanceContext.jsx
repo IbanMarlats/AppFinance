@@ -40,7 +40,11 @@ export const FinanceProvider = ({ children }) => {
     const addIncome = async (income) => {
         try {
             const res = await axios.post(`${API_URL}/incomes`, income);
-            setIncomes(prev => [...prev, res.data]);
+            if (Array.isArray(res.data)) {
+                setIncomes(prev => [...prev, ...res.data]);
+            } else {
+                setIncomes(prev => [...prev, res.data]);
+            }
         } catch (err) {
             console.error('Error adding income:', err);
         }

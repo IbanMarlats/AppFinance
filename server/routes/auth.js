@@ -168,7 +168,7 @@ router.post('/resend-verification', (req, res) => {
 
 // Get Current User (Session check)
 router.get('/me', authenticateToken, (req, res) => {
-    db.get("SELECT email_encrypted, is_verified, role, is_premium, is_gift, created_at, subscription_plan, subscription_status, premium_until, trial_until FROM users WHERE id = ?", [req.user.id], (err, row) => {
+    db.get("SELECT email_encrypted, is_verified, role, is_premium, is_gift, created_at, subscription_plan, subscription_status, premium_until, trial_until, is_subject_vat, vat_start_date FROM users WHERE id = ?", [req.user.id], (err, row) => {
         if (!row) return res.status(404).json({ error: "User not found" });
         try {
             res.json({
@@ -182,7 +182,9 @@ router.get('/me', authenticateToken, (req, res) => {
                 subscription_plan: row.subscription_plan,
                 subscription_status: row.subscription_status,
                 premium_until: row.premium_until,
-                trial_until: row.trial_until
+                trial_until: row.trial_until,
+                is_subject_vat: !!row.is_subject_vat,
+                vat_start_date: row.vat_start_date
             });
         } catch (e) {
             console.error("Decryption failed for user " + req.user.id + ":", e);
@@ -191,6 +193,39 @@ router.get('/me', authenticateToken, (req, res) => {
             res.clearCookie('token');
             res.status(401).json({ error: "Session invalid (Decryption failed)" });
         }
+    });
+});
+
+// Update Profile (VAT)
+router.put('/me', authenticateToken, (req, res) => {
+    const { is_subject_vat, vat_start_date } = req.body;
+
+    // Validate inputs if needed (date format etc)
+
+    // Build dynamic query
+    let fields = [];
+    let values = [];
+
+    if (is_subject_vat !== undefined) {
+        fields.push("is_subject_vat = ?");
+        values.push(is_subject_vat ? 1 : 0);
+    }
+    if (vat_start_date !== undefined) {
+        fields.push("vat_start_date = ?");
+        values.push(vat_start_date);
+    }
+
+    if (fields.length === 0) {
+        return res.json({ message: "Nothing to update" });
+    }
+
+    values.push(req.user.id);
+
+    const sql = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
+
+    db.run(sql, values, function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: "Profile updated" });
     });
 });
 

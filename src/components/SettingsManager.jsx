@@ -7,6 +7,8 @@ export default function SettingsManager() {
         tva_threshold: '',
         micro_threshold: '',
         urssaf_freelance: '',
+        urssaf_freelance_bnc: '',
+        urssaf_freelance_bic: '',
         urssaf_ecommerce: ''
     });
     const [loading, setLoading] = useState(true);
@@ -62,6 +64,8 @@ export default function SettingsManager() {
                         tva_threshold: data.tva_threshold || '',
                         micro_threshold: data.micro_threshold || '',
                         urssaf_freelance: data.urssaf_freelance || '',
+                        urssaf_freelance_bnc: data.urssaf_freelance_bnc || '',
+                        urssaf_freelance_bic: data.urssaf_freelance_bic || '',
                         urssaf_ecommerce: data.urssaf_ecommerce || ''
                     });
                 }
@@ -141,18 +145,33 @@ export default function SettingsManager() {
                             placeholder="Ex: 77700"
                         />
                     </div>
+
+                    {/* Updated URSSAF Fields */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Taux URSSAF (Prestation) %</label>
+                        <label className="block text-sm font-medium text-gray-700">Taux URSSAF (BNC) %</label>
                         <input
                             type="number"
                             step="0.1"
-                            name="urssaf_freelance"
-                            value={settings.urssaf_freelance}
+                            name="urssaf_freelance_bnc"
+                            value={settings.urssaf_freelance_bnc || ''}
                             onChange={handleChange}
                             className="input mt-1 w-full"
                             placeholder="Ex: 23.1"
                         />
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Taux URSSAF (BIC) %</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            name="urssaf_freelance_bic"
+                            value={settings.urssaf_freelance_bic || ''}
+                            onChange={handleChange}
+                            className="input mt-1 w-full"
+                            placeholder="Ex: 21.2"
+                        />
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Taux URSSAF (Vente) %</label>
                         <input

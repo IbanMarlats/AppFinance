@@ -30,3 +30,4 @@ seed_fake_users.js
 server/database.sqlite
 server/database.db
 
+RESUME_APP.md

@@ -15,21 +15,22 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-    const { name, taxRate } = req.body;
+    const { name, taxRate, fee_vat_rate } = req.body;
     const id = uuidv4();
-    db.run("INSERT INTO platforms (id, name, taxRate, user_id) VALUES (?, ?, ?, ?)", [id, name, taxRate, req.user.id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ id, name, taxRate });
-    });
+    db.run("INSERT INTO platforms (id, name, taxRate, fee_vat_rate, user_id) VALUES (?, ?, ?, ?, ?)",
+        [id, name, taxRate, fee_vat_rate || 0, req.user.id], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ id, name, taxRate, fee_vat_rate: fee_vat_rate || 0 });
+        });
 });
 
 router.put('/:id', (req, res) => {
-    const { name, taxRate, fixed_fee } = req.body;
-    db.run("UPDATE platforms SET name = ?, taxRate = ?, fixed_fee = ? WHERE id = ? AND user_id = ?",
-        [name, taxRate, fixed_fee || 0, req.params.id, req.user.id],
+    const { name, taxRate, fixed_fee, fee_vat_rate } = req.body;
+    db.run("UPDATE platforms SET name = ?, taxRate = ?, fixed_fee = ?, fee_vat_rate = ? WHERE id = ? AND user_id = ?",
+        [name, taxRate, fixed_fee || 0, fee_vat_rate || 0, req.params.id, req.user.id],
         function (err) {
             if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: req.params.id, name, taxRate, fixed_fee: fixed_fee || 0 });
+            res.json({ id: req.params.id, name, taxRate, fixed_fee: fixed_fee || 0, fee_vat_rate: fee_vat_rate || 0 });
         }
     );
 });

@@ -25,8 +25,12 @@ export default function ConfirmationModal({ isOpen, onClose, onConfirm, message 
                 <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>Confirmation</h3>
                 <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>{message}</p>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                    <button className="btn-action" onClick={onClose} style={{ minWidth: '80px' }}>Annuler</button>
-                    <button className="danger btn-action" onClick={onConfirm} style={{ minWidth: '80px' }}>Supprimer</button>
+                    <button onClick={onClose} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors">
+                        Annuler
+                    </button>
+                    <button onClick={onConfirm} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-md transition-colors">
+                        Supprimer
+                    </button>
                 </div>
             </div>
             <style>{`

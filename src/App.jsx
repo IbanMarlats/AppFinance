@@ -119,36 +119,39 @@ function FinanceApp() {
   };
 
   // Main Content
-  const MainDashboard = () => (
-    <Layout activeTab={getLayoutTab()} onTabChange={handleTabChange}>
-      <UnverifiedBanner />
+  // FIX: Moved MainDashboard logic to be inline or memoized to avoid re-definition on every render
+  // which causes unmounting of children (like IncomeTable) when User context updates.
+  const activeLayoutTab = getLayoutTab();
 
-      {tab === 'income' && <IncomeTable />}
-      {tab === 'expense' && <ExpenseTable />}
-      {tab === 'config' && (
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-slate-800">Configuration</h2>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <PlatformManager />
-            <CategoryManager />
-            <div className="xl:col-span-2">
-              <SettingsManager />
-            </div>
-          </div>
-        </div>
-      )}
-      {tab === 'stats' && <StatsDashboard />}
-      {tab === 'goals' && <GoalsDashboard />}
-      {tab === 'profile' && <UserProfile />}
-      {tab === 'admin' && user.role === 'admin' && <AdminDashboard />}
-      {tab === 'audit' && user.role === 'admin' && <AdminLogs />}
-    </Layout>
-  );
 
   return (
     <FinanceProvider>
       <Routes>
-        <Route path="/" element={<MainDashboard />} />
+        <Route path="/" element={
+          <Layout activeTab={activeLayoutTab} onTabChange={handleTabChange}>
+            <UnverifiedBanner />
+
+            {tab === 'income' && <IncomeTable />}
+            {tab === 'expense' && <ExpenseTable />}
+            {tab === 'config' && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-slate-800">Configuration</h2>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  <PlatformManager />
+                  <CategoryManager />
+                  <div className="xl:col-span-2">
+                    <SettingsManager />
+                  </div>
+                </div>
+              </div>
+            )}
+            {tab === 'stats' && <StatsDashboard />}
+            {tab === 'goals' && <GoalsDashboard />}
+            {tab === 'profile' && <UserProfile />}
+            {tab === 'admin' && user.role === 'admin' && <AdminDashboard />}
+            {tab === 'audit' && user.role === 'admin' && <AdminLogs />}
+          </Layout>
+        } />
         <Route path="/premium" element={
           <Layout activeTab="premium" onTabChange={(t) => { navigate('/'); handleTabChange(t); }}>
             <PremiumPage />
