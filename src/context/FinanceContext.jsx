@@ -71,7 +71,11 @@ export const FinanceProvider = ({ children }) => {
     const addExpense = async (expense) => {
         try {
             const res = await axios.post(`${API_URL}/expenses`, expense);
-            setExpenses(prev => [...prev, res.data]);
+            if (Array.isArray(res.data)) {
+                setExpenses(prev => [...prev, ...res.data]);
+            } else {
+                setExpenses(prev => [...prev, res.data]);
+            }
         } catch (err) {
             console.error('Error adding expense:', err);
         }
@@ -140,6 +144,15 @@ export const FinanceProvider = ({ children }) => {
         }
     };
 
+    const updateCategory = async (id, updatedCategory) => {
+        try {
+            const res = await axios.put(`${API_URL}/categories/${id}`, updatedCategory);
+            setCategories(prev => prev.map(c => c.id === id ? res.data : c));
+        } catch (err) {
+            console.error('Error updating category:', err);
+        }
+    };
+
     const updateSettings = async (newSettings) => {
         try {
             await axios.put(`${API_URL}/admin/settings`, newSettings);
@@ -150,13 +163,23 @@ export const FinanceProvider = ({ children }) => {
         }
     };
 
+    const updateUserSettings = async (newSettings) => {
+        try {
+            await axios.put(`${API_URL}/settings`, newSettings);
+            setSettings(prev => ({ ...prev, ...newSettings }));
+        } catch (err) {
+            console.error('Error updating user settings:', err);
+            throw err;
+        }
+    };
+
     return (
         <FinanceContext.Provider value={{
             incomes, addIncome, deleteIncome, updateIncome,
             expenses, addExpense, deleteExpense, updateExpense,
             platforms, addPlatform, deletePlatform, updatePlatform,
-            categories, addCategory, deleteCategory,
-            settings, updateSettings
+            categories, addCategory, deleteCategory, updateCategory,
+            settings, updateSettings, updateUserSettings
         }}>
             {children}
         </FinanceContext.Provider>

@@ -1,4 +1,4 @@
-import { useFinance } from '../context/FinanceContext';
+import { useFinance } from '../../../context/FinanceContext';
 
 export default function ExpenseStats({ expenses }) {
     const { categories } = useFinance();
@@ -16,7 +16,7 @@ export default function ExpenseStats({ expenses }) {
 
     return (
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
-            <h2 className="text-lg font-bold text-slate-800 mb-6">Répartition par Catégorie</h2>
+            <h2 className="text-lg font-bold text-slate-800 mb-6">Dépenses par Catégorie</h2>
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                     <thead>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useFinance } from '../context/FinanceContext';
-import { useAuth } from '../context/AuthContext';
+import { useFinance } from '../../../context/FinanceContext';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function EcommerceStats({ year }) {
     const { incomes, expenses, platforms } = useFinance();
@@ -45,15 +45,18 @@ export default function EcommerceStats({ year }) {
     // Group by 'name' as product
     const productStats = {};
     activeSales.forEach(sale => {
-        const p = platforms.find(pl => pl.id === sale.platformId) || { taxRate: 0, fixed_fee: 0 };
+        const p = platforms.find(pl => pl.id === sale.platformId) || { taxRate: 0, fixed_fee: 0, fee_vat_rate: 0 };
 
         // Fee calculation
-        const platformFee = (sale.amount * (p.taxRate / 100)) + (p.fixed_fee || 0);
+        const feeHT = (sale.amount * (p.taxRate / 100)) + (p.fixed_fee || 0);
+        const feeVat = feeHT * ((p.fee_vat_rate || 0) / 100);
+        const feeTotal = feeHT + feeVat;
+        const platformFee = user?.is_subject_vat ? feeHT : feeTotal;
 
         // Costs
         const cogs = sale.cogs || 0;
         const shipping = sale.shipping_cost || 0;
-        const transaction = 0; // If tracked separately, add here.
+        const transaction = 0;
 
         const totalCost = cogs + shipping + platformFee + transaction;
         const margin = sale.amount - totalCost;
@@ -86,8 +89,11 @@ export default function EcommerceStats({ year }) {
     const totalCogs = activeSales.reduce((acc, curr) => acc + (curr.cogs || 0), 0);
     const totalShipping = activeSales.reduce((acc, curr) => acc + (curr.shipping_cost || 0), 0);
     const totalFees = activeSales.reduce((acc, curr) => {
-        const p = platforms.find(pl => pl.id === curr.platformId) || { taxRate: 0, fixed_fee: 0 };
-        return acc + (curr.amount * (p.taxRate / 100)) + (p.fixed_fee || 0);
+        const p = platforms.find(pl => pl.id === curr.platformId) || { taxRate: 0, fixed_fee: 0, fee_vat_rate: 0 };
+        const feeHT = (curr.amount * (p.taxRate / 100)) + (p.fixed_fee || 0);
+        const feeVat = feeHT * ((p.fee_vat_rate || 0) / 100);
+        const feeTotal = feeHT + feeVat;
+        return acc + (user?.is_subject_vat ? feeHT : feeTotal);
     }, 0);
     // Marketing is totalAdSpend
 

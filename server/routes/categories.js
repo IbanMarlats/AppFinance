@@ -26,6 +26,17 @@ router.post('/', (req, res) => {
     );
 });
 
+router.put('/:id', (req, res) => {
+    const { name, color } = req.body;
+    db.run("UPDATE expense_categories SET name = ?, color = ? WHERE id = ? AND user_id = ?",
+        [name, color, req.params.id, req.user.id],
+        function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ id: req.params.id, name, color });
+        }
+    );
+});
+
 router.delete('/:id', (req, res) => {
     db.run("DELETE FROM expense_categories WHERE id = ? AND user_id = ?", [req.params.id, req.user.id], function (err) {
         if (err) return res.status(500).json({ error: err.message });

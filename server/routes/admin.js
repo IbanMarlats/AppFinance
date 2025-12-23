@@ -110,15 +110,28 @@ router.get('/stats', (req, res) => {
 
             // Estimate active paid users at that time
             const activeInMonth = rows.filter(r => {
-                // Must be currently premium or was premium? Hard to know strict history without event log.
-                // We assume current premium status reflects "subscription started" date.
+                // Must be premium
                 if (r.is_premium !== 1) return false;
-                if (r.is_gift) return false; // Exclude gifts from history too
-                if (r.subscription_plan !== 'monthly' && r.subscription_plan !== 'annual') return false; // Exclude free
+                // Exclude gifts
+                if (r.is_gift) return false;
+                // Only Monthly/Annual plans count for MRR here
+                if (r.subscription_plan !== 'monthly' && r.subscription_plan !== 'annual') return false;
 
-                const startStr = r.subscription_started_at || r.created_at; // Fallback to created_at
-                const startDate = new Date(startStr);
-                return startDate <= monthEnd;
+                // Determine effective revenue start date
+                let effectiveStartDate = new Date(r.subscription_started_at || r.created_at);
+
+                // If user has a trial, revenue starts AFTER trial
+                if (r.trial_until) {
+                    const trialEnd = new Date(r.trial_until);
+                    // If trial ends in the future relative to this month, they are not paying yet
+                    // If trial ended in the past, revenue started at trialEnd
+                    if (trialEnd > effectiveStartDate) {
+                        effectiveStartDate = trialEnd;
+                    }
+                }
+
+                // User contributes to MRR if their paying period started on or before the end of this month
+                return effectiveStartDate <= monthEnd;
             });
 
             let mrr = 0;
@@ -414,14 +427,37 @@ router.get('/logs', (req, res) => {
 });
 
 // Newsletter Send
-router.post('/newsletter/send', (req, res) => {
+router.post('/newsletter/send', async (req, res) => {
     const { subject, message } = req.body;
     if (!subject || !message) return res.status(400).json({ error: "Subject and message required" });
 
-    db.all("SELECT email_encrypted FROM users WHERE newsletter = 1", [], async (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
+    // Fetches subscribers AND global settings (for signature) in parallel
+    const pSubscribers = new Promise((resolve, reject) => {
+        db.all("SELECT email_encrypted FROM users WHERE newsletter = 1", [], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+
+    const pSettings = new Promise((resolve, reject) => {
+        db.get("SELECT value FROM settings WHERE key = 'admin_signature'", [], (err, row) => {
+            if (err) reject(err);
+            else resolve(row ? row.value : '');
+        });
+    });
+
+    try {
+        const [rows, signature] = await Promise.all([pSubscribers, pSettings]);
 
         if (rows.length === 0) return res.json({ message: "No subscribers found", count: 0 });
+
+        // Append signature if distinct and not already present (naive check)
+        // If the user already has the signature in the HTML, we avoid duplicating.
+        // We look for a significant chunk of the signature string to decide.
+        let finalMessage = message;
+        if (signature && !message.includes(signature)) {
+            finalMessage += `<br><br>--<br>${signature}`;
+        }
 
         let sentCount = 0;
         let errorCount = 0;
@@ -436,11 +472,15 @@ router.post('/newsletter/send', (req, res) => {
                     from: process.env.SMTP_FROM || '"Finance App" <noreply@financeapp.local>',
                     to: email,
                     subject: subject,
-                    html: `<div style="font-family: sans-serif; padding: 20px;">
-                        <h2>${subject}</h2>
-                        <p style="white-space: pre-wrap;">${message}</p>
-                        <hr/>
-                        <p style="font-size: 0.8em; color: gray;">Vous recevez cet email car vous êtes inscrit à notre newsletter via l'application Finance.</p>
+                    html: `<div style="font-family: sans-serif; padding: 20px; color: #334155;">
+                        <h2 style="color: #0f172a; margin-bottom: 24px;">${subject}</h2>
+                        <div style="line-height: 1.6;">
+                            ${finalMessage}
+                        </div>
+                        <hr style="margin: 32px 0; border: none; border-top: 1px solid #e2e8f0;"/>
+                        <p style="font-size: 0.8em; color: #94a3b8; text-align: center;">
+                            Vous recevez cet email car vous êtes inscrit à notre newsletter via l'application Finance.
+                        </p>
                     </div>`
                 };
 
@@ -467,7 +507,11 @@ router.post('/newsletter/send', (req, res) => {
         logEvent('EMAIL_BATCH_SENT', logDescription, req.user.id, req);
 
         res.json({ message: "Newsletter processing complete", sent: sentCount, errors: errorCount });
-    });
+
+    } catch (err) {
+        console.error("Newsletter global error:", err);
+        return res.status(500).json({ error: err.message });
+    }
 });
 
 export default router;

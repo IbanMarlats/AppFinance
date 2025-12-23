@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import {
     LayoutDashboard,
     Wallet,
@@ -49,9 +49,14 @@ export default function Layout({ children, activeTab, onTabChange }) {
                 <div className="h-16 flex items-center px-6 border-b border-slate-100">
                     <div className="flex items-center gap-3 text-indigo-600 font-bold text-xl">
                         <div className="p-1.5 bg-indigo-600 rounded-lg text-white">
-                            <TrendingUp size={20} strokeWidth={3} />
+                            {/* Classic Trend Logo */}
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22 6L13.5 14.5L8.5 9.5L2 16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M22 6V10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M22 6H18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
                         </div>
-                        {isSidebarOpen && <span className="tracking-tight text-slate-900">Finance<span className="text-indigo-600">AI</span></span>}
+                        {isSidebarOpen && <span className="tracking-tight text-slate-900">Fiskeo</span>}
                     </div>
                 </div>
 

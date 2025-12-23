@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SettingsManager() {
     const { user } = useAuth();
     const [settings, setSettings] = useState({
         tva_threshold: '',
+        tva_threshold_sell: '',
         micro_threshold: '',
+        micro_threshold_sell: '',
         urssaf_freelance: '',
         urssaf_freelance_bnc: '',
         urssaf_freelance_bic: '',
@@ -62,7 +64,9 @@ export default function SettingsManager() {
                     const data = await response.json();
                     setSettings({
                         tva_threshold: data.tva_threshold || '',
+                        tva_threshold_sell: data.tva_threshold_sell || '',
                         micro_threshold: data.micro_threshold || '',
+                        micro_threshold_sell: data.micro_threshold_sell || '',
                         urssaf_freelance: data.urssaf_freelance || '',
                         urssaf_freelance_bnc: data.urssaf_freelance_bnc || '',
                         urssaf_freelance_bic: data.urssaf_freelance_bic || '',
@@ -123,19 +127,36 @@ export default function SettingsManager() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    {/* TVA Thresholds */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Seuil Franchise TVA (€)</label>
+                        <label className="block text-sm font-medium text-gray-700">Seuil Franchise TVA (Prestations)</label>
                         <input
                             type="number"
                             name="tva_threshold"
                             value={settings.tva_threshold}
                             onChange={handleChange}
                             className="input mt-1 w-full"
-                            placeholder="Ex: 36800"
+                            placeholder="Ex: 37500"
                         />
+                        <p className="text-xs text-slate-400 mt-1">BNC / BIC Services</p>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Seuil Micro-Entreprise (€)</label>
+                        <label className="block text-sm font-medium text-gray-700">Seuil Franchise TVA (Vente)</label>
+                        <input
+                            type="number"
+                            name="tva_threshold_sell"
+                            value={settings.tva_threshold_sell || ''}
+                            onChange={handleChange}
+                            className="input mt-1 w-full"
+                            placeholder="Ex: 85000"
+                        />
+                        <p className="text-xs text-slate-400 mt-1">Marchandises / Logement</p>
+                    </div>
+
+                    {/* Micro Thresholds */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Seuil Micro (Prestations)</label>
                         <input
                             type="number"
                             name="micro_threshold"
@@ -143,6 +164,17 @@ export default function SettingsManager() {
                             onChange={handleChange}
                             className="input mt-1 w-full"
                             placeholder="Ex: 77700"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Seuil Micro (Vente)</label>
+                        <input
+                            type="number"
+                            name="micro_threshold_sell"
+                            value={settings.micro_threshold_sell || ''}
+                            onChange={handleChange}
+                            className="input mt-1 w-full"
+                            placeholder="Ex: 188700"
                         />
                     </div>
 
@@ -156,8 +188,11 @@ export default function SettingsManager() {
                             value={settings.urssaf_freelance_bnc || ''}
                             onChange={handleChange}
                             className="input mt-1 w-full"
-                            placeholder="Ex: 23.1"
+                            placeholder="Ex: 24.8"
                         />
+                        <p className="text-xs text-slate-400 mt-1">
+                            <span className="font-bold">Note ACRE :</span> ~12.5% si 1ère année.
+                        </p>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Taux URSSAF (BIC) %</label>
@@ -168,7 +203,7 @@ export default function SettingsManager() {
                             value={settings.urssaf_freelance_bic || ''}
                             onChange={handleChange}
                             className="input mt-1 w-full"
-                            placeholder="Ex: 21.2"
+                            placeholder="Ex: 21.4"
                         />
                     </div>
 
@@ -181,7 +216,7 @@ export default function SettingsManager() {
                             value={settings.urssaf_ecommerce}
                             onChange={handleChange}
                             className="input mt-1 w-full"
-                            placeholder="Ex: 12.3"
+                            placeholder="Ex: 12.4"
                         />
                     </div>
                 </div>

@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { Mail, Calendar, CreditCard, Shield, User, ExternalLink, Crown } from 'lucide-react';
+import PremiumSubscriptionBlock from '../ui/PremiumSubscriptionBlock';
+
+// Force refresh
 
 export default function UserProfile() {
     const { user, login } = useAuth(); // Need login to update user state if context supports it, or reload.
@@ -15,41 +18,20 @@ export default function UserProfile() {
 
     const [loading, setLoading] = useState(null);
 
-    const handleSubscribe = async (planType) => {
-        setLoading(planType);
+
+
+    const handleManageSubscription = async () => {
+        setLoading('manage');
         try {
-            // Hardcoded Price IDs matching PremiumPage.jsx
-            const priceId = planType === 'monthly'
-                ? 'price_1SfMTkCHELpndPIwMCCvS6bF'
-                : 'price_1SfMUBCHELpndPIwEp9X7vXI';
-
-            const mode = planType === 'monthly' ? 'subscription' : 'payment';
-
-            const res = await axios.post('http://localhost:3001/api/stripe/create-checkout-session', {
-                priceId,
-                mode
-            }, { withCredentials: true });
-
+            const res = await axios.post('http://localhost:3001/api/stripe/create-portal-session', {}, { withCredentials: true });
             if (res.data.url) {
                 window.location.href = res.data.url;
             }
         } catch (err) {
-            console.error("Payment Error:", err);
-            alert("Erreur lors de l'initialisation du paiement.");
-            setLoading(null);
-        }
-    };
-
-    const handleManageSubscription = async () => {
-        if (!confirm("Voulez-vous résilier votre abonnement Premium ?\n(Action immédiate pour cette démo)")) return;
-
-        try {
-            await axios.post('http://localhost:3001/api/auth/cancel-subscription', {}, { withCredentials: true });
-            alert('Abonnement résilié.');
-            window.location.reload();
-        } catch (err) {
             console.error(err);
-            alert("Erreur lors de la résiliation");
+            alert("Erreur lors de l'accès au portail de facturation.");
+        } finally {
+            setLoading(null);
         }
     };
 
@@ -80,19 +62,60 @@ export default function UserProfile() {
                     <div className="flex-1 text-center md:text-left">
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">{user.email}</h1>
                         <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium border flex items-center gap-1.5 ${user.role === 'admin'
-                                ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                : 'bg-slate-50 text-slate-600 border-slate-200'
-                                }`}>
-                                <Shield size={14} />
-                                {user.role === 'admin' ? 'Administrateur' :
-                                    user.role === 'freelance' ? 'Freelance' :
-                                        user.role === 'artisan' ? 'Artisan / Créateur' :
-                                            user.role === 'creator' ? 'Créateur de Contenu' :
-                                                user.role === 'field_service' ? 'Prestataire Terrain' :
-                                                    user.role === 'ecommerce' ? 'E-commerce' :
-                                                        user.role === 'perso' ? 'Personnel' : 'Utilisateur'}
-                            </span>
+                            {/* Role Badge with Edit */}
+                            {loading === 'role' ? (
+                                <span className="px-3 py-1 rounded-full text-sm font-medium bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-2">
+                                    <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                                    Mise à jour...
+                                </span>
+                            ) : (
+                                <div className="relative group">
+                                    <select
+                                        className={`appearance-none pl-8 pr-8 py-1 rounded-full text-sm font-medium border cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all ${user.role === 'admin'
+                                            ? 'bg-purple-50 text-purple-700 border-purple-200 focus:ring-purple-200'
+                                            : 'bg-slate-50 text-slate-600 border-slate-200 focus:ring-slate-200 hover:bg-slate-100'
+                                            }`}
+                                        value={user.role}
+                                        onChange={async (e) => {
+                                            const newRole = e.target.value;
+                                            if (newRole === user.role) return;
+
+                                            if (!confirm(`Confirmez-vous le changement de rôle vers ${e.target.options[e.target.selectedIndex].text} ?`)) {
+                                                e.target.value = user.role; // Reset
+                                                return;
+                                            }
+
+                                            setLoading('role');
+                                            try {
+                                                await axios.put('http://localhost:3001/api/auth/me', { role: newRole }, { withCredentials: true });
+                                                window.location.reload(); // Simple reload to refresh all context/UI
+                                            } catch (err) {
+                                                console.error(err);
+                                                alert("Erreur lors de la mise à jour du rôle");
+                                                setLoading(null);
+                                            }
+                                        }}
+                                        disabled={user.role === 'admin'} // Admin role locked or special handling? Let's allow change if not admin, or just show text for admin.
+                                    >
+                                        <option value="freelance">Freelance</option>
+                                        <option value="artisan">Artisan / Créateur</option>
+                                        <option value="creator">Créateur de Contenu</option>
+                                        <option value="field_service">Prestataire Terrain</option>
+                                        <option value="ecommerce">E-commerce</option>
+                                        <option value="perso">Personnel</option>
+                                        {user.role === 'admin' && <option value="admin">Administrateur</option>}
+                                    </select>
+                                    <Shield size={14} className={`absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${user.role === 'admin' ? 'text-purple-700' : 'text-slate-500'
+                                        }`} />
+                                    {/* Edit Icon hint on hover if not mobile */}
+                                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M6 9l6 6 6-6" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            )}
+
                             <span className={`px-3 py-1 rounded-full text-sm font-medium border flex items-center gap-1.5 ${user.is_verified
                                 ? 'bg-green-50 text-green-700 border-green-200'
                                 : 'bg-amber-50 text-amber-700 border-amber-200'
@@ -156,75 +179,43 @@ export default function UserProfile() {
                                 </div>
                                 <div className="mt-4 flex gap-2">
                                     <button
-                                        className="text-xs font-semibold text-amber-800 hover:text-amber-900 underline"
+                                        className="text-xs font-semibold text-amber-800 hover:text-amber-900 underline disabled:opacity-50"
                                         onClick={handleManageSubscription}
+                                        disabled={loading === 'manage'}
                                     >
-                                        Gérer mon abonnement
+                                        {loading === 'manage' ? 'Chargement...' : 'Gérer mon abonnement'}
                                     </button>
                                 </div>
                             </div>
-                            <p className="text-sm text-slate-500 leading-relaxed">
-                                Vous profitez de toutes les fonctionnalités : Stats illimitées, Support prioritaire, et plus encore.
-                            </p>
+
+                            {/* Detailed Benefits List for Active Subscribers */}
+                            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-5 border border-indigo-100">
+                                <h3 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
+                                    <Crown size={16} className="text-amber-500 fill-amber-500" />
+                                    Avantages Premium Actifs
+                                </h3>
+                                <ul className="space-y-3">
+                                    {[
+                                        'Tableau de bord avancé & KPI illimités',
+                                        'Objectifs mensuels & Suivi de budget',
+                                        'Export PDF & CSV comptable',
+                                        'Support prioritaire & Accès VIP',
+                                        'Badge Premium exclusif'
+                                    ].map((feat, i) => (
+                                        <li key={i} className="flex items-center gap-3 text-indigo-800 text-sm">
+                                            <div className="p-0.5 bg-indigo-200 rounded-full shrink-0">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-700">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
+                                            {feat}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
                         </>
                     ) : (
-                        <div className="space-y-4">
-                            <p className="text-sm text-slate-500 mb-4">
-                                Choisissez votre plan pour débloquer toutes les fonctionnalités.
-                            </p>
-
-                            <div className="grid grid-cols-1 gap-3">
-                                {/* Monthly Plan */}
-                                <div className="border border-slate-200 rounded-xl p-4 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer relative group"
-                                    onClick={() => handleSubscribe('monthly')}
-                                >
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h3 className="font-bold text-slate-900">Mensuel</h3>
-                                            <p className="text-sm text-slate-500">Sans engagement</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="text-xl font-bold text-slate-900">8.90€</span>
-                                            <span className="text-xs text-slate-500">/mois</span>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleSubscribe('monthly')}
-                                        disabled={loading !== null}
-                                        className="mt-3 w-full py-2 rounded-lg bg-slate-100 text-slate-700 font-medium text-sm group-hover:bg-amber-500 group-hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {loading === 'monthly' ? 'Chargement...' : 'Choisir ce plan'}
-                                    </button>
-                                </div>
-
-                                {/* Annual Plan */}
-                                <div className="border-2 border-amber-400 bg-amber-50/10 rounded-xl p-4 relative cursor-pointer hover:shadow-lg transition-all"
-                                    onClick={() => handleSubscribe('annual')}
-                                >
-                                    <div className="absolute -top-3 right-4 bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide">
-                                        -33% d'économie
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h3 className="font-bold text-slate-900">Annuel</h3>
-                                            <p className="text-sm text-slate-500">Paiement unique</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="text-xl font-bold text-slate-900">70.80€</span>
-                                            <span className="text-xs text-slate-500">/an</span>
-                                            <div className="text-[10px] text-green-600 font-bold">soit 5.90€ / mois</div>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleSubscribe('annual')}
-                                        disabled={loading !== null}
-                                        className="mt-3 w-full py-2 rounded-lg bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {loading === 'annual' ? 'Chargement...' : 'Choisir ce plan'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <PremiumSubscriptionBlock />
                     )}
                 </div>
 
@@ -247,18 +238,6 @@ export default function UserProfile() {
                                 <div>
                                     <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Membre depuis</p>
                                     <p className="text-sm font-semibold text-slate-900">{formatDate(user.created_at)}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-lg transition-colors group">
-                                <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-white group-hover:shadow-sm transition-all">
-                                    <Shield size={18} />
-                                </div>
-                                <div className="flex-1 overflow-hidden">
-                                    <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">ID Utilisateur</p>
-                                    <p className="text-xs font-mono text-slate-600 truncate select-all bg-slate-100 px-1.5 py-0.5 rounded w-fit mt-0.5">
-                                        {user.id}
-                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -288,6 +267,6 @@ export default function UserProfile() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

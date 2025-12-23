@@ -113,6 +113,48 @@ export async function sendPasswordResetEmail(email, token) {
     }
 }
 
+
+export async function sendSuggestionEmail(userEmail, suggestionText) {
+    // Ensure transporter is ready
+    if (!transporter) await createTransporter();
+
+    const mailOptions = {
+        from: process.env.SMTP_FROM || '"Finance App" <noreply@financeapp.local>',
+        to: 'iban.marlats@gmail.com',
+        replyTo: userEmail,
+        subject: "défi suggestion de tableau",
+        html: `
+            <h3>Nouvelle suggestion de tableau</h3>
+            <p><strong>Utilisateur :</strong> ${userEmail}</p>
+            <p><strong>Suggestion :</strong></p>
+            <blockquote style="background-color: #f3f4f6; padding: 12px; border-left: 4px solid #6366f1;">
+                ${suggestionText.replace(/\n/g, '<br>')}
+            </blockquote>
+        `,
+    };
+
+    if (transporter) {
+        try {
+            const info = await transporter.sendMail(mailOptions);
+            console.log("Suggestion sent: %s", info.messageId);
+            if (info.messageId && !process.env.SMTP_HOST) {
+                console.log("Suggestion Preview URL: %s", nodemailer.getTestMessageUrl(info));
+            }
+            return true;
+        } catch (error) {
+            console.error("Error sending suggestion email: ", error);
+            return false;
+        }
+    } else {
+        console.log("----------------------------------------------------------------");
+        console.log(" >>> SUGGESTION EMAIL (Mock) <<<");
+        console.log(" From: " + userEmail);
+        console.log(" Body: " + suggestionText);
+        console.log("----------------------------------------------------------------");
+        return true;
+    }
+}
+
 export function getTransporter() {
     return transporter;
 }

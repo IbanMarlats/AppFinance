@@ -2,31 +2,31 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FinanceProvider } from './context/FinanceContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import IncomeTable from './components/IncomeTable';
-import ExpenseTable from './components/ExpenseTable';
-import CategoryManager from './components/CategoryManager';
-import PlatformManager from './components/PlatformManager';
-import SettingsManager from './components/SettingsManager';
-import UserProfile from './components/UserProfile';
-import Layout from './components/Layout';
+import IncomeTable from './components/finance/IncomeTable';
+import ExpenseTable from './components/finance/ExpenseTable';
+import CategoryManager from './components/settings/CategoryManager';
+import PlatformManager from './components/settings/PlatformManager';
+import SettingsManager from './components/settings/SettingsManager';
+import UserProfile from './components/settings/UserProfile';
+import Layout from './components/layout/Layout';
 
 // ...
 
-import StatsDashboard from './components/StatsDashboard';
+import StatsDashboard from './components/dashboard/StatsDashboard';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import VerifyEmail from './components/auth/VerifyEmail';
 import ForgotPassword from './components/auth/ForgotPassword';
-import AdminDashboard from './components/AdminDashboard';
-import AdminLogs from './components/AdminLogs';
-import GoalsDashboard from './components/GoalsDashboard';
+import AdminDashboard from './components/admin/AdminDashboard';
+import AdminLogs from './components/admin/AdminLogs';
+import GoalsDashboard from './components/dashboard/GoalsDashboard';
 
-import UnverifiedBanner from './components/UnverifiedBanner';
-import CookieConsent from './components/CookieConsent';
+import UnverifiedBanner from './components/ui/UnverifiedBanner';
+import CookieConsent from './components/ui/CookieConsent';
 
 import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
-import PremiumPage from './components/PremiumPage';
-import PaymentResult from './components/PaymentResult';
+import PremiumPage from './components/payment/PremiumPage';
+import PaymentResult from './components/payment/PaymentResult';
 
 function FinanceApp() {
   const [tab, setTabState] = useState(() => localStorage.getItem('active_tab') || 'income');
@@ -131,8 +131,8 @@ function FinanceApp() {
           <Layout activeTab={activeLayoutTab} onTabChange={handleTabChange}>
             <UnverifiedBanner />
 
-            {tab === 'income' && <IncomeTable />}
-            {tab === 'expense' && <ExpenseTable />}
+            {tab === 'income' && <IncomeTable onNavigateToConfig={() => setTab('config')} />}
+            {tab === 'expense' && <ExpenseTable onNavigateToConfig={() => setTab('config')} />}
             {tab === 'config' && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-slate-800">Configuration</h2>

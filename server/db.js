@@ -62,7 +62,10 @@ db.serialize(() => {
   addColumnIfNotExists(db, 'users', 'subscription_started_at', "TEXT");
   addColumnIfNotExists(db, 'users', 'is_gift', "BOOLEAN DEFAULT 0");
   addColumnIfNotExists(db, 'users', 'is_subject_vat', "BOOLEAN DEFAULT 0");
+  addColumnIfNotExists(db, 'users', 'is_subject_vat', "BOOLEAN DEFAULT 0");
   addColumnIfNotExists(db, 'users', 'vat_start_date', "TEXT");
+  addColumnIfNotExists(db, 'users', 'stripe_customer_id', "TEXT");
+  addColumnIfNotExists(db, 'users', 'has_used_trial', "BOOLEAN DEFAULT 0");
 
   // Platforms
   db.run(`CREATE TABLE IF NOT EXISTS platforms (

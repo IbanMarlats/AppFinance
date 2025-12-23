@@ -4,6 +4,7 @@ import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../context/AuthContext';
 import { Search, Filter, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
 import RevenueChart from './RevenueChart';
+import RichTextEditor from './RichTextEditor';
 
 export default function AdminDashboard() {
     const { user } = useAuth();
@@ -35,6 +36,10 @@ export default function AdminDashboard() {
     useEffect(() => {
         if (settings) {
             setLocalSettings(settings);
+            // Auto-populate signature if message is empty and signature exists
+            if (!newsletterMessage && settings.admin_signature) {
+                setNewsletterMessage(`<br><br>--<br>${settings.admin_signature}`);
+            }
         }
     }, [settings]);
 
@@ -294,51 +299,109 @@ export default function AdminDashboard() {
             {/* Global Settings Section */}
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Configuration Globale</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+                <h4 className="text-sm font-semibold text-slate-500 uppercase mb-3">Seuils & Plafonds (€)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <div>
-                        <label className="label">Seuil TVA (€)</label>
+                        <label className="label text-xs">Seuil TVA (Service)</label>
                         <input
                             type="number"
-                            value={localSettings.tva_threshold || ''}
-                            onChange={e => handleSettingsChange('tva_threshold', e.target.value)}
+                            value={localSettings.tva_threshold_service || ''}
+                            onChange={e => handleSettingsChange('tva_threshold_service', e.target.value)} // Legacy/Fallback needed?
+                            placeholder="ex: 37500"
                             className="input"
                         />
                     </div>
                     <div>
-                        <label className="label">Seuil Micro-Entreprise (€)</label>
+                        <label className="label text-xs">Seuil TVA (Vente)</label>
                         <input
                             type="number"
-                            value={localSettings.micro_threshold || ''}
-                            onChange={e => handleSettingsChange('micro_threshold', e.target.value)}
+                            value={localSettings.tva_threshold_sell || ''}
+                            onChange={e => handleSettingsChange('tva_threshold_sell', e.target.value)}
+                            placeholder="ex: 91900"
                             className="input"
                         />
                     </div>
                     <div>
-                        <label className="label">% URSSAF (Freelance)</label>
+                        <label className="label text-xs">Plafond Micro (Service)</label>
                         <input
                             type="number"
-                            step="0.1"
-                            value={localSettings.urssaf_freelance || ''}
-                            onChange={e => handleSettingsChange('urssaf_freelance', e.target.value)}
+                            value={localSettings.micro_threshold_service || ''}
+                            onChange={e => handleSettingsChange('micro_threshold_service', e.target.value)}
+                            placeholder="ex: 77700"
                             className="input"
                         />
                     </div>
                     <div>
-                        <label className="label">% URSSAF (E-commerce)</label>
+                        <label className="label text-xs">Plafond Micro (Vente)</label>
                         <input
                             type="number"
-                            step="0.1"
-                            value={localSettings.urssaf_ecommerce || ''}
-                            onChange={e => handleSettingsChange('urssaf_ecommerce', e.target.value)}
+                            value={localSettings.micro_threshold_sell || ''}
+                            onChange={e => handleSettingsChange('micro_threshold_sell', e.target.value)}
+                            placeholder="ex: 188700"
                             className="input"
                         />
                     </div>
                 </div>
-                <button onClick={saveSettings} disabled={settingsLoading} className="btn-primary">
+
+                <h4 className="text-sm font-semibold text-slate-500 uppercase mb-3">Cotisations URSSAF (%)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label className="label text-xs">URSSAF (BNC - Libéral)</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            value={localSettings.urssaf_service_bnc || ''}
+                            onChange={e => handleSettingsChange('urssaf_service_bnc', e.target.value)}
+                            placeholder="ex: 26.1"
+                            className="input"
+                        />
+                    </div>
+                    <div>
+                        <label className="label text-xs">URSSAF (BIC - Commercial)</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            value={localSettings.urssaf_service_bic || ''}
+                            onChange={e => handleSettingsChange('urssaf_service_bic', e.target.value)}
+                            placeholder="ex: 21.2"
+                            className="input"
+                        />
+                    </div>
+                    <div>
+                        <label className="label text-xs">URSSAF (Vente / E-commerce)</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            value={localSettings.urssaf_sell || ''}
+                            onChange={e => handleSettingsChange('urssaf_sell', e.target.value)}
+                            placeholder="ex: 12.3"
+                            className="input"
+                        />
+                    </div>
+                </div>
+
+
+
+                <h4 className="text-sm font-semibold text-slate-500 uppercase mb-3">Signature des Emails</h4>
+                <div className="mb-6">
+                    <label className="label text-xs">Signature par défaut</label>
+                    <div className="mt-1">
+                        <RichTextEditor
+                            value={localSettings.admin_signature || ''}
+                            onChange={(value) => handleSettingsChange('admin_signature', value)}
+                            placeholder="Votre signature ici..."
+                        />
+                    </div>
+                </div>
+
+                <button onClick={saveSettings} disabled={settingsLoading} className="btn-primary w-full md:w-auto">
                     {settingsLoading ? 'Sauvegarde...' : 'Sauvegarder les Paliers'}
                 </button>
             </div>
 
+
+            {/* Newsletter Sending Section */}
             {/* Newsletter Sending Section */}
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Envoyer une Newsletter</h3>
@@ -355,13 +418,12 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                         <label className="label">Message</label>
-                        <textarea
-                            placeholder="Contenu du message..."
+                        <RichTextEditor
                             value={newsletterMessage}
-                            onChange={e => setNewsletterMessage(e.target.value)}
-                            rows={6}
-                            className="textarea w-full"
+                            onChange={setNewsletterMessage}
+                            placeholder="Rédigez votre newsletter ici..."
                         />
+                        <p className="text-xs text-slate-500 mt-1">Vous pouvez utiliser du gras, italique, des titres et des listes pour une meilleure mise en page.</p>
                     </div>
                     {newsletterStatus && (
                         <div className={`p-3 rounded-lg text-sm border ${newsletterStatus.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' :
@@ -379,7 +441,7 @@ export default function AdminDashboard() {
                         {newsletterSending ? 'Envoi en cours...' : 'Envoyer la Newsletter'}
                     </button>
                 </div>
-            </div>
+            </div >
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {/* Total Users */}
@@ -600,6 +662,6 @@ export default function AdminDashboard() {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div >
     );
 }

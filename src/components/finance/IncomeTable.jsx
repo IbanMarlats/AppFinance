@@ -1,12 +1,16 @@
 import axios from 'axios';
 import { useState, useEffect } from 'react';
-import { useFinance } from '../context/FinanceContext';
-import { useAuth } from '../context/AuthContext';
+import { useFinance } from '../../context/FinanceContext';
+import { useAuth } from '../../context/AuthContext';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-import ConfirmationModal from './ConfirmationModal';
-import Select from './Select';
+import ConfirmationModal from '../ui/ConfirmationModal';
+import { hexToRgba } from '../ui/ColorPicker';
+import Select from '../ui/Select';
+import DatePicker from '../ui/DatePicker';
 
-export default function IncomeTable() {
+export default function IncomeTable(props) {
     const { incomes, addIncome, deleteIncome, updateIncome, platforms, settings } = useFinance();
     const { user, refreshUser } = useAuth(); // Add refreshUser
     const isEcommerce = user?.role === 'ecommerce';
@@ -59,9 +63,18 @@ export default function IncomeTable() {
     const [editingId, setEditingId] = useState(null);
     const [editForm, setEditForm] = useState({});
 
+    // Reset pagination when filter changes
+    useEffect(() => {
+        setVisibleLimit(10);
+    }, [selectedYears]);
+
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
+
+    // Pagination State
+    const [visibleLimit, setVisibleLimit] = useState(10);
+    const [sortOrder, setSortOrder] = useState('desc');
 
     const regularizeMonth = async () => {
         const currentMonth = new Date().getMonth();
@@ -417,30 +430,36 @@ export default function IncomeTable() {
         // Fee VAT = Fee HT * (fee_vat_rate / 100)
         const feeVat = feeHT * ((p.fee_vat_rate || 0) / 100);
 
-        // Total Fee (TTC) for cash flow, but we track VAT separately
+        // Total Fee (TTC)
         const feeTotal = feeHT + feeVat;
+
+        // Effective Fee (Cost) logic
+        // If subject to VAT, the VAT part is recoverable, so real cost is HT.
+        // If NOT subject to VAT (Franchise), VAT is a cost, so real cost is TTC.
+        const effectiveFee = user?.is_subject_vat ? feeHT : feeTotal;
 
         // URSSAF Calculation
         let urssafRate = 0;
         if (isEcommerce) {
             urssafRate = (settings.urssaf_ecommerce || 12.3) / 100;
         } else {
-            // Freelance BNC vs BIC
+            // Freelance BNC vs BIC vs VENTE
             const type = inc.tax_category || 'bnc'; // Default to BNC
             if (type === 'bic') {
                 urssafRate = (settings.urssaf_freelance_bic || 21.2) / 100;
+            } else if (type === 'vente') {
+                urssafRate = (settings.urssaf_ecommerce || 12.3) / 100;
             } else {
                 urssafRate = (settings.urssaf_freelance_bnc || 23.1) / 100;
             }
         }
 
-        // NEW RULE: URSSAF is calculated on GROSS amount
+        // URSSAF is calculated on GROSS amount
         const urssaf = gross * urssafRate;
 
-        // Final Net = Gross - Total Fee - URSSAF
-        // Note: Deductible VAT is retrieved by the user later via VAT declaration, 
-        // so cash-in-hand NOW is Gross - Total Fee - URSSAF.
-        const final = gross - feeTotal - urssaf;
+        // Final Net Calculation
+        // Net = Gross - Effective Fee - URSSAF
+        const final = gross - effectiveFee - urssaf;
 
         return { p, gross, feeHT, feeVat, feeTotal, urssaf, final, urssafRate };
     };
@@ -467,6 +486,13 @@ export default function IncomeTable() {
     const currentYearTotals = currentYearIncomes.reduce((acc, curr) => {
         if (curr.status === 'quote_sent' || curr.status === 'quote_signed') return acc;
         return acc + curr.amount; // Gross amount
+    }, 0);
+
+    const previousYear = currentYear - 1;
+    const previousYearIncomes = incomes.filter(i => new Date(i.date).getFullYear() === previousYear);
+    const previousYearTotals = previousYearIncomes.reduce((acc, curr) => {
+        if (curr.status === 'quote_sent' || curr.status === 'quote_signed') return acc;
+        return acc + curr.amount;
     }, 0);
 
     const TVA_THRESHOLD = settings.tva_threshold || 36800;
@@ -559,6 +585,90 @@ export default function IncomeTable() {
                     </div>
                 </div>
                 <div className="flex flex-wrap gap-4 justify-end items-center">
+                    {/* Export Buttons Group */}
+                    <div className="flex bg-white rounded-lg border border-slate-300 overflow-hidden shadow-sm h-10">
+                        <button
+                            onClick={() => {
+                                if (!user?.is_premium) {
+                                    alert("Fonctionnalité réservée aux membres Premium.\nAbonnez-vous pour exporter vos données.");
+                                    return;
+                                }
+
+                                const headers = ['Date', 'Nom', 'Plateforme', 'Montant', 'Statut', 'Catégorie'];
+                                const csvContent = [
+                                    headers.join(','),
+                                    ...filteredIncomes.map(row => {
+                                        const pName = platforms.find(p => p.id === row.platformId)?.name || 'Inconnu';
+                                        return [
+                                            row.date,
+                                            `"${row.name.replace(/"/g, '""')}"`,
+                                            `"${pName.replace(/"/g, '""')}"`,
+                                            row.amount,
+                                            row.status,
+                                            row.tax_category || 'bnc'
+                                        ].join(',');
+                                    })
+                                ].join('\n');
+
+                                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                                const link = document.createElement('a');
+                                link.href = URL.createObjectURL(blob);
+                                link.download = `revenus_export_${new Date().toISOString().split('T')[0]}.csv`;
+                                link.click();
+                            }}
+                            className="px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors border-r border-slate-300 flex items-center gap-2"
+                            title={!user?.is_premium ? "Réservé aux membres Premium" : "Exporter en CSV"}
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Export CSV
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (!user?.is_premium) {
+                                    alert("Fonctionnalité réservée aux membres Premium.\nAbonnez-vous pour exporter vos données.");
+                                    return;
+                                }
+
+                                const doc = new jsPDF();
+                                doc.setFontSize(18);
+                                doc.text(`Relevé de Revenus - ${new Date().getFullYear()}`, 14, 20);
+                                doc.setFontSize(10);
+                                doc.text(`Généré le ${new Date().toLocaleDateString()}`, 14, 26);
+                                doc.text(`Total Revenus: ${totals.gross.toFixed(2)}€`, 14, 32);
+
+                                const tableColumn = ["Date", "Nom", "Plateforme", "Catégorie", "Montant"];
+                                const tableRows = [];
+
+                                filteredIncomes.forEach(income => {
+                                    const pName = platforms.find(p => p.id === income.platformId)?.name || 'Inconnu';
+                                    const incomeData = [
+                                        new Date(income.date).toLocaleDateString(),
+                                        income.name,
+                                        pName,
+                                        (income.tax_category || 'bnc').toUpperCase(),
+                                        income.amount.toFixed(2) + "€"
+                                    ];
+                                    tableRows.push(incomeData);
+                                });
+
+                                autoTable(doc, {
+                                    startY: 38,
+                                    head: [tableColumn],
+                                    body: tableRows,
+                                    theme: 'grid',
+                                    headStyles: { fillColor: [79, 70, 229] }, // Indigo 600
+                                });
+
+                                doc.save(`revenus_${new Date().toISOString().split('T')[0]}.pdf`);
+                            }}
+                            className="px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                            title={!user?.is_premium ? "Réservé aux membres Premium" : "PDF"}
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            PDF
+                        </button>
+                    </div>
+
                     {!user?.is_subject_vat && (
                         <button
                             onClick={() => setIsVatModalOpen(true)}
@@ -825,11 +935,15 @@ export default function IncomeTable() {
 
 
             {/* FORM */}
-            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl border border-slate-200 mb-8 shadow-xl shadow-slate-200/60 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
-                    <span className="text-8xl font-black text-indigo-900 leading-none">€</span>
+            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl border border-slate-200 mb-8 shadow-xl shadow-slate-200/60 relative">
+                {/* Decorative Background Layer - Clipped */}
+                <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+                    <div className="absolute top-0 right-0 p-6 opacity-5">
+                        <span className="text-8xl font-black text-indigo-900 leading-none">€</span>
+                    </div>
                 </div>
-                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-3">
+
+                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-3 relative z-10">
                     <div className="p-2 bg-indigo-600 rounded-lg text-white shadow-md shadow-indigo-200">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     </div>
@@ -837,12 +951,10 @@ export default function IncomeTable() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-5 mb-5">
                     <div>
-                        <label className="label text-slate-700">Date</label>
-                        <input
-                            type="date"
+                        <DatePicker
+                            label="Date"
                             value={date}
                             onChange={e => setDate(e.target.value)}
-                            className="input bg-white border-slate-600 text-slate-900"
                         />
                     </div>
                     <div>
@@ -863,10 +975,20 @@ export default function IncomeTable() {
                             label="Plateforme"
                             value={platformId}
                             onChange={e => {
-                                setPlatformId(e.target.value);
+                                const val = e.target.value;
+                                if (val === 'ADD_NEW') {
+                                    // Trigger navigation prop
+                                    if (props.onNavigateToConfig) props.onNavigateToConfig();
+                                    return;
+                                }
+                                setPlatformId(val);
                                 if (errors.platformId) setErrors({ ...errors, platformId: false });
                             }}
-                            options={platforms.map(p => ({ value: p.id, label: p.name }))}
+                            options={[
+                                ...platforms.map(p => ({ value: p.id, label: p.name })),
+                                { value: 'Autre', label: 'Autre' },
+                                { value: 'ADD_NEW', label: '+ Ajouter une plateforme...' }
+                            ]}
                             error={errors.platformId}
                         />
                     </div>
@@ -1037,7 +1159,8 @@ export default function IncomeTable() {
                                 onChange={e => setAddFormRole({ ...addFormRole, tax_category: e.target.value })}
                                 options={[
                                     { value: 'bnc', label: 'BNC (Prestation de service / Libéral)' },
-                                    { value: 'bic', label: 'BIC (Achat-Revente / Commercial)' }
+                                    { value: 'bic', label: 'BIC (Achat-Revente / Commercial)' },
+                                    { value: 'vente', label: 'Vente (Marchandises)' }
                                 ]}
                             />
                         </div>
@@ -1098,14 +1221,31 @@ export default function IncomeTable() {
 
 
 
-            <div className="flex justify-end relative">
+            <div className="flex justify-end relative gap-2">
+                {/* Sort Toggle */}
+                <button
+                    onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                    className="p-1.5 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 shadow-sm transition-colors"
+                    title={sortOrder === 'desc' ? "Trier du plus ancien au plus récent" : "Trier du plus récent au plus ancien"}
+                >
+                    {sortOrder === 'desc' ? (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4 4m0 0l4 4m-4-4v12" />
+                        </svg>
+                    ) : (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4 4m0 0l4-4m-4-4v12" transform="scale(1, -1) translate(0, -24)" />
+                        </svg>
+                    )}
+                </button>
+
                 <button
                     onClick={() => setShowColumnMenu(!showColumnMenu)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-colors"
+                    className="p-1.5 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 shadow-sm transition-colors"
+                    title="Gérer les colonnes visible"
                 >
-                    <span>👁️ Colonnes</span>
-                    <svg className={`w-4 h-4 transition-transform ${showColumnMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
                     </svg>
                 </button>
 
@@ -1160,7 +1300,11 @@ export default function IncomeTable() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
-                        {filteredIncomes.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).map(inc => {
+                        {filteredIncomes.slice().sort((a, b) => {
+                            return sortOrder === 'desc'
+                                ? new Date(b.date) - new Date(a.date)
+                                : new Date(a.date) - new Date(b.date);
+                        }).slice(0, visibleLimit).map(inc => {
                             const isEditing = editingId === inc.id;
                             const { p, gross, feeTotal, feeVat, urssaf, final } = calculate(isEditing ? { ...editForm, platformId: editForm.platformId || inc.platformId } : inc);
 
@@ -1192,6 +1336,7 @@ export default function IncomeTable() {
                                                     >
                                                         <option value="bnc">BNC</option>
                                                         <option value="bic">BIC</option>
+                                                        <option value="vente">Vente</option>
                                                     </select>
                                                 )}
                                                 <label className="flex items-center gap-2 cursor-pointer bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 transition-colors">
@@ -1236,7 +1381,13 @@ export default function IncomeTable() {
                                     {visibleColumns.date && <td className="px-4 py-3 text-slate-800 font-medium">{new Date(inc.date).toLocaleDateString()}</td>}
                                     {visibleColumns.name && <td className="px-4 py-3 font-semibold text-slate-900">
                                         {inc.name}
-                                        {!!inc.is_recurring && <span className="ml-2 text-[10px] uppercase font-bold text-blue-600 bg-blue-100 px-1 py-0.5 rounded border border-blue-200">MENSUEL</span>}
+                                        {!!inc.is_recurring && (
+                                            <span className="ml-2 text-blue-600 bg-blue-50 border border-blue-200 p-0.5 rounded-full inline-flex items-center justify-center" title="Revenu Mensuel">
+                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                </svg>
+                                            </span>
+                                        )}
                                         {inc.status === 'quote_sent' && <span className="ml-2 bg-amber-100 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded text-xs font-bold">DEVIS</span>}
                                     </td>}
                                     {visibleColumns.platform && <td className="px-4 py-3">
@@ -1303,6 +1454,30 @@ export default function IncomeTable() {
                 </table>
             </div>
 
+            {/* Pagination Controls */}
+            {filteredIncomes.length > 10 && (
+                <div className="flex justify-center mt-4">
+                    {visibleLimit < filteredIncomes.length ? (
+                        <button
+                            onClick={() => setVisibleLimit(prev => prev + 10)}
+                            className="px-6 py-2 bg-white border border-slate-300 text-slate-700 font-bold rounded-full shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2"
+                        >
+                            <span>Voir plus</span>
+                            <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-500">
+                                {Math.min(filteredIncomes.length - visibleLimit, 10)} restants
+                            </span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => setVisibleLimit(10)}
+                            className="px-6 py-2 bg-slate-100 text-slate-600 font-bold rounded-full hover:bg-slate-200 transition-colors"
+                        >
+                            Réduire la liste
+                        </button>
+                    )}
+                </div>
+            )}
+
             {/* Jauges Seuils */}
             <div className="grid gap-6 mb-8 mt-8">
                 {/* Jauge Franchise TVA */}
@@ -1349,8 +1524,40 @@ export default function IncomeTable() {
                         />
                     </div>
                     {microProgress >= 100 && (
-                        <div className="mt-2 text-xs font-bold text-red-600 flex items-center gap-1">
-                            ⚠️ Seuil Micro dépassé : Passage en Société requis (si 2 ans consécutifs)
+                        <div className="mt-4 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg shadow-sm flex items-start gap-3">
+                            <div className="text-blue-500 mt-1">
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-blue-900">Seuil Micro-Entreprise dépassé</h4>
+                                {previousYearTotals > MICRO_THRESHOLD ? (
+                                    <>
+                                        <p className="font-bold text-red-800 mt-1">
+                                            SEUIL DÉPASSÉ 2 ANNÉES CONSÉCUTIVES ({previousYear} et {currentYear}).
+                                        </p>
+                                        <p className="text-sm text-red-700 mt-1">
+                                            Vous ne pouvez plus bénéficier du régime micro-entreprise.
+                                            Vous basculez <strong>obligatoirement</strong> au régime réel dès le 1er janvier prochain.
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="font-bold text-blue-800 mt-1">
+                                            Vous avez dépassé le seuil de {MICRO_THRESHOLD.toLocaleString()}€.
+                                        </p>
+                                        <p className="text-sm text-blue-700 mt-1">
+                                            Pas de panique ! En Micro-Entreprise, vous avez droit à une <strong>année de tolérance</strong>.
+                                        </p>
+                                        <ul className="list-disc pl-5 mt-2 text-blue-700 text-sm space-y-1">
+                                            <li>Vous restez en micro-entreprise cette année ({currentYear}).</li>
+                                            <li>Vous ne basculerez au régime réel que si vous dépassez ce seuil <strong>deux années consécutives</strong>.</li>
+                                            <li>⚠️ Attention : Si vous aviez déjà dépassé le seuil en {previousYear}, vous devez passer au réel.</li>
+                                        </ul>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -1362,6 +1569,6 @@ export default function IncomeTable() {
                 onConfirm={confirmDelete}
                 message="Êtes-vous sûr de vouloir supprimer ce revenu ?"
             />
-        </div >
+        </div>
     );
 }

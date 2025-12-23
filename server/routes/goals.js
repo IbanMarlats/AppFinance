@@ -21,48 +21,53 @@ router.post('/', authenticateToken, (req, res) => {
     if (!['year', 'month'].includes(period)) return res.status(400).json({ error: "Invalid period" });
     if (!period_key) return res.status(400).json({ error: "Period key required" });
 
-    const sql = `
-        INSERT INTO goals (id, user_id, type, period, target_amount, period_key)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT(user_id, type, period, period_key) 
-        DO UPDATE SET target_amount = excluded.target_amount
-    `;
-
-    // Check if ID is needed for insert
-    // SQLite upsert doesn't automatically generate ID if we conflict update, but we need one for insert.
-    // It's tricky with simple SQL. 
-    // Easier: Check existence first.
-
-    db.get(
-        "SELECT id FROM goals WHERE user_id = ? AND type = ? AND period = ? AND period_key = ?",
-        [req.user.id, type, period, period_key],
-        (err, row) => {
-            if (err) return res.status(500).json({ error: err.message });
-
-            if (row) {
-                // Update
-                db.run(
-                    "UPDATE goals SET target_amount = ? WHERE id = ?",
-                    [target_amount, row.id],
-                    (err) => {
-                        if (err) return res.status(500).json({ error: err.message });
-                        res.json({ message: "Goal updated", id: row.id, target_amount });
-                    }
-                );
-            } else {
-                // Insert
-                const id = uuidv4();
-                db.run(
-                    "INSERT INTO goals (id, user_id, type, period, target_amount, period_key) VALUES (?, ?, ?, ?, ?, ?)",
-                    [id, req.user.id, type, period, target_amount, period_key],
-                    (err) => {
-                        if (err) return res.status(500).json({ error: err.message });
-                        res.json({ message: "Goal set", id, target_amount });
-                    }
-                );
-            }
+    // Check Premium Status
+    db.get("SELECT is_premium FROM users WHERE id = ?", [req.user.id], (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!user || !user.is_premium) {
+            return res.status(403).json({ error: "Premium functionality required" });
         }
-    );
+
+        // Proceed with upsert logic...
+
+        // Proceed with upsert logic...
+        upsertGoal();
+    });
+
+    function upsertGoal() {
+        db.get(
+            "SELECT id FROM goals WHERE user_id = ? AND type = ? AND period = ? AND period_key = ?",
+            [req.user.id, type, period, period_key],
+            (err, row) => {
+                if (err) return res.status(500).json({ error: err.message });
+
+                if (row) {
+                    // Update
+                    db.run(
+                        "UPDATE goals SET target_amount = ? WHERE id = ?",
+                        [target_amount, row.id],
+                        (err) => {
+                            if (err) return res.status(500).json({ error: err.message });
+                            res.json({ message: "Goal updated", id: row.id, target_amount });
+                        }
+                    );
+                } else {
+                    // Insert
+                    const id = uuidv4();
+                    db.run(
+                        "INSERT INTO goals (id, user_id, type, period, target_amount, period_key) VALUES (?, ?, ?, ?, ?, ?)",
+                        [id, req.user.id, type, period, target_amount, period_key],
+                        (err) => {
+                            if (err) return res.status(500).json({ error: err.message });
+                            res.json({ message: "Goal set", id, target_amount });
+                        }
+                    );
+                }
+            }
+        );
+    }
+
+
 });
 
 export default router;

@@ -48,6 +48,36 @@ router.post('/register', async (req, res) => {
                 return res.status(500).json({ error: err.message });
             }
 
+            // Seed Default Platforms (Malt, Freework, Hors Plateforme)
+            const defaults = [
+                { name: 'Malt', taxRate: 10, fixed_fee: 0, fee_vat_rate: 20, color: '#ef4444' }, // Red
+                { name: 'Freework', taxRate: 0, fixed_fee: 0, fee_vat_rate: 0, color: '#3b82f6' }, // Blue
+                { name: 'Hors Plateforme', taxRate: 0, fixed_fee: 0, fee_vat_rate: 0, color: '#64748b' } // Slate
+            ];
+
+            defaults.forEach(def => {
+                const pid = uuidv4();
+                db.run(
+                    "INSERT INTO platforms (id, name, taxRate, fixed_fee, fee_vat_rate, color, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    [pid, def.name, def.taxRate, def.fixed_fee, def.fee_vat_rate, def.color, id]
+                );
+            });
+
+            // Seed Default Categories
+            const defaultCats = [
+                { name: 'Prospection', color: '#f59e0b' },
+                { name: 'Serveur', color: '#64748b' },
+                { name: 'URSSAF', color: '#6366f1' }
+            ];
+
+            defaultCats.forEach(cat => {
+                const cid = uuidv4();
+                db.run(
+                    "INSERT INTO expense_categories (id, name, color, user_id) VALUES (?, ?, ?, ?)",
+                    [cid, cat.name, cat.color, id]
+                );
+            });
+
             // Send Email
             sendVerificationEmail(email, verificationToken);
 
@@ -57,7 +87,12 @@ router.post('/register', async (req, res) => {
 
             // Login immediately 
             const token = jwt.sign({ id, is_verified: false, role }, SECRET_KEY, { expiresIn: '30d' });
-            res.cookie('token', token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
+            res.cookie('token', token, {
+                httpOnly: true,
+                maxAge: 30 * 24 * 60 * 60 * 1000,
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production'
+            });
             res.status(201).json({ message: 'User created. Please check email.', user: { id, email, is_verified: 0, role } });
         }
     );
@@ -97,7 +132,12 @@ router.post('/login', (req, res) => {
         db.run("UPDATE users SET last_login = ? WHERE id = ?", [new Date().toISOString(), user.id]);
 
         const token = jwt.sign({ id: user.id, is_verified: !!user.is_verified, role: user.role || 'admin' }, SECRET_KEY, { expiresIn: '30d' });
-        res.cookie('token', token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
+        res.cookie('token', token, {
+            httpOnly: true,
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production'
+        });
 
         res.json({
             message: 'Logged in',
@@ -198,7 +238,7 @@ router.get('/me', authenticateToken, (req, res) => {
 
 // Update Profile (VAT)
 router.put('/me', authenticateToken, (req, res) => {
-    const { is_subject_vat, vat_start_date } = req.body;
+    const { is_subject_vat, vat_start_date, role } = req.body;
 
     // Validate inputs if needed (date format etc)
 
@@ -213,6 +253,18 @@ router.put('/me', authenticateToken, (req, res) => {
     if (vat_start_date !== undefined) {
         fields.push("vat_start_date = ?");
         values.push(vat_start_date);
+    }
+    if (role !== undefined) {
+        // SECURITY: CRITICAL - PREVENT ELEVATION TO ADMIN
+        if (role === 'admin') {
+            return res.status(403).json({ error: "Action non autorisée: Impossible de devenir Admin." });
+        }
+
+        const allowedRoles = ['freelance', 'artisan', 'creator', 'field_service', 'ecommerce', 'perso'];
+        if (allowedRoles.includes(role)) {
+            fields.push("role = ?");
+            values.push(role);
+        }
     }
 
     if (fields.length === 0) {

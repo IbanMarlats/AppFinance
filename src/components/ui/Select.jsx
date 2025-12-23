@@ -41,14 +41,14 @@ export default function Select({ label, value, onChange, options, placeholder = 
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 mt-1 w-full bg-white shadow-xl max-h-60 rounded-lg py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm animate-fadeIn">
+                <div className="absolute z-50 mt-1 min-w-full w-auto bg-white shadow-xl max-h-60 rounded-lg py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm animate-fadeIn">
                     {options.map((option) => (
                         <div
                             key={option.value}
                             onClick={() => handleSelect(option.value)}
                             className={`cursor-pointer select-none relative py-2 pl-3 pr-9 transition-colors ${option.value == value ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'text-slate-900 hover:bg-indigo-50 hover:text-indigo-600'}`}
                         >
-                            <span className={`block truncate ${option.value == value ? 'font-semibold' : 'font-normal'}`}>
+                            <span className={`block whitespace-nowrap ${option.value == value ? 'font-semibold' : 'font-normal'}`}>
                                 {option.label}
                             </span>
                             {option.value == value && (

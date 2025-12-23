@@ -1,5 +1,5 @@
-import { useFinance } from '../context/FinanceContext';
-import { useAuth } from '../context/AuthContext';
+import { useFinance } from '../../../context/FinanceContext';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function CreatorStats({ year }) {
     const { incomes } = useFinance();
