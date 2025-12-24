@@ -20,6 +20,7 @@ import ForgotPassword from './components/auth/ForgotPassword';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminLogs from './components/admin/AdminLogs';
 import GoalsDashboard from './components/dashboard/GoalsDashboard';
+import RecapDashboard from './components/dashboard/RecapDashboard';
 
 import UnverifiedBanner from './components/ui/UnverifiedBanner';
 import CookieConsent from './components/ui/CookieConsent';
@@ -147,6 +148,8 @@ function FinanceApp() {
             )}
             {tab === 'stats' && <StatsDashboard />}
             {tab === 'goals' && <GoalsDashboard />}
+            {tab === 'goals' && <GoalsDashboard />}
+            {tab === 'recap' && <RecapDashboard />}
             {tab === 'profile' && <UserProfile />}
             {tab === 'admin' && user.role === 'admin' && <AdminDashboard />}
             {tab === 'audit' && user.role === 'admin' && <AdminLogs />}

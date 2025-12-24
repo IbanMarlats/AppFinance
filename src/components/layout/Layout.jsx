@@ -11,7 +11,8 @@ import {
     Shield,
     TrendingUp,
     Crown,
-    Target
+    Target,
+    Calendar
 } from 'lucide-react';
 
 export default function Layout({ children, activeTab, onTabChange }) {
@@ -70,6 +71,7 @@ export default function Layout({ children, activeTab, onTabChange }) {
                     <NavItem id="income" icon={Wallet} label="Revenus" />
                     <NavItem id="expense" icon={Receipt} label="Dépenses" />
                     <NavItem id="goals" icon={Target} label="Objectifs" />
+                    <NavItem id="recap" icon={Calendar} label="Bilans Mensuels" />
 
                     <div className="my-4 border-t border-slate-100 mx-3"></div>
 

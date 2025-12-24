@@ -30,7 +30,12 @@ const PORT = process.env.PORT || 3001;
 console.log("Current working directory:", process.cwd());
 
 // Initialize Email Transporter
+// Initialize Email Transporter
 createTransporter();
+
+// Initialize Cron Jobs
+import { initCronJobs } from './cron/monthlyRecap.js';
+initCronJobs();
 
 // --- MIDDLEWARE ---
 app.use(cors({
@@ -53,6 +58,11 @@ app.use('/api/goals', goalsRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/contact', contactRoutes);
+
+app.use('/api/contact', contactRoutes);
+
+import recapRoutes from './routes/recaps.js';
+app.use('/api/recaps', recapRoutes);
 
 import uploadRoutes from './routes/upload.js';
 app.use('/api/upload', uploadRoutes);

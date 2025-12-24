@@ -155,6 +155,39 @@ export async function sendSuggestionEmail(userEmail, suggestionText) {
     }
 }
 
+export async function sendEmail(to, subject, html) {
+    // Ensure transporter is ready
+    if (!transporter) await createTransporter();
+
+    const mailOptions = {
+        from: process.env.SMTP_FROM || '"Finance App" <noreply@financeapp.local>',
+        to: to,
+        subject: subject,
+        html: html,
+    };
+
+    if (transporter) {
+        try {
+            const info = await transporter.sendMail(mailOptions);
+            console.log(`Email sent to ${to}: %s`, info.messageId);
+            if (info.messageId && !process.env.SMTP_HOST) {
+                console.log("Email Preview URL: %s", nodemailer.getTestMessageUrl(info));
+            }
+            return true;
+        } catch (error) {
+            console.error("Error sending email: ", error);
+            return false;
+        }
+    } else {
+        console.log("----------------------------------------------------------------");
+        console.log(` >>> MOCK EMAIL to ${to} <<<`);
+        console.log(` Subject: ${subject}`);
+        console.log(" Body length: " + html.length);
+        console.log("----------------------------------------------------------------");
+        return true;
+    }
+}
+
 export function getTransporter() {
     return transporter;
 }

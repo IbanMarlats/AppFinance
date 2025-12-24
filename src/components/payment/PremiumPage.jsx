@@ -1,5 +1,5 @@
 
-import PremiumSubscriptionBlock from './PremiumSubscriptionBlock';
+import PremiumSubscriptionBlock from '../ui/PremiumSubscriptionBlock';
 
 export default function PremiumPage() {
 

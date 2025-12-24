@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useFinance } from '../context/FinanceContext';
-import { useAuth } from '../context/AuthContext';
+import { useFinance } from '../../context/FinanceContext';
+import { useAuth } from '../../context/AuthContext';
 import { Search, Filter, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
-import RevenueChart from './RevenueChart';
+import RevenueChart from '../dashboard/charts/RevenueChart';
 import RichTextEditor from './RichTextEditor';
 
 export default function AdminDashboard() {

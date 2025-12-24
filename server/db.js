@@ -210,6 +210,30 @@ db.serialize(() => {
     FOREIGN KEY(user_id) REFERENCES users(id),
     UNIQUE(user_id, type, period, period_key)
   )`);
+
+  // Monthly Recaps
+  db.run(`CREATE TABLE IF NOT EXISTS monthly_recaps (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    month INTEGER,
+    year INTEGER,
+    data TEXT, -- JSON string of the summary stats
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    UNIQUE(user_id, month, year)
+  )`);
+
+  // Notifications
+  db.run(`CREATE TABLE IF NOT EXISTS notifications (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    type TEXT, -- 'recap', 'alert', 'system'
+    message TEXT,
+    link TEXT,
+    is_read BOOLEAN DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  )`);
 });
 
 export default db;
