@@ -35,7 +35,9 @@ createTransporter();
 
 // Initialize Cron Jobs
 import { initCronJobs } from './cron/monthlyRecap.js';
+import { initSubscriptionCron } from './cron/checkSubscriptions.js';
 initCronJobs();
+initSubscriptionCron();
 
 // --- MIDDLEWARE ---
 app.use(cors({

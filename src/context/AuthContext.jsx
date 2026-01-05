@@ -31,8 +31,8 @@ export function AuthProvider({ children }) {
         return res.data;
     };
 
-    const register = async (email, password, role, newsletter) => {
-        const res = await axios.post('http://localhost:3001/api/auth/register', { email, password, role, newsletter });
+    const register = async (email, password, role, newsletter, declaration_frequency) => {
+        const res = await axios.post('http://localhost:3001/api/auth/register', { email, password, role, newsletter, declaration_frequency });
         setUser(res.data.user);
         return res.data;
     };

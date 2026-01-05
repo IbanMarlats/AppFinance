@@ -1,16 +1,24 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
-import { AlertTriangle, TrendingUp, PiggyBank, FileText } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Wallet, ArrowRight } from 'lucide-react';
 
 export default function VatDashboard({ year }) {
-    const { incomes, expenses, settings } = useFinance();
+    const { incomes, expenses } = useFinance();
     const { user } = useAuth();
 
     // Use prop if passed, else default to current
     const currentYear = year || new Date().getFullYear();
-    const VAT_THRESHOLD = 37500;
-    const MICRO_THRESHOLD = 77700;
+
+    // Determine thresholds based on role (defaulting to BNC/Services)
+    const isBIC = user?.role === 'freelance_bic' || user?.role === 'ecommerce';
+
+    // 2025/2026 Thresholds (approx.)
+    // User requested 37500 for VAT BNC.
+    const VAT_THRESHOLD = isBIC ? 91900 : 37500;  // Franchise en base
+    const MICRO_THRESHOLD = isBIC ? 188700 : 77700; // Plafond Micro
+
+    const roleLabel = isBIC ? 'Vente / BIC' : 'Services / BNC';
 
     // Filter incomes and expenses for current year
     const yearlyStats = useMemo(() => {
@@ -38,117 +46,106 @@ export default function VatDashboard({ year }) {
     const remainingVat = Math.max(VAT_THRESHOLD - yearlyStats.totalHT, 0);
     const remainingMicro = Math.max(MICRO_THRESHOLD - yearlyStats.totalHT, 0);
 
-    const vatToPay = Math.max(yearlyStats.totalVAT - yearlyStats.totalVATDeductible, 0); // Can be negative (credit), but for "to pay" usually 0 if credit
     const vatBalance = yearlyStats.totalVAT - yearlyStats.totalVATDeductible;
 
     return (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            {/* Header Simplified */}
+            <div className="bg-slate-50/50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <TrendingUp className="w-5 h-5 text-indigo-600" />
-                    <h3 className="font-bold text-slate-800">Suivi Fiscal {currentYear}</h3>
+                    <div>
+                        <h3 className="font-bold text-slate-800 text-sm">Suivi Fiscal {currentYear}</h3>
+                        <p className="text-xs text-slate-400 font-medium">{roleLabel}</p>
+                    </div>
                 </div>
                 {yearlyStats.totalHT > VAT_THRESHOLD && (
-                    <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-200 rounded-full">
-                        <AlertTriangle className="w-4 h-4 text-amber-600" />
-                        <span className="text-xs font-bold text-amber-700 uppercase">Assujetti TVA</span>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-100 rounded-full">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide">Assujetti TVA</span>
                     </div>
                 )}
             </div>
 
-            <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Column: CA & Gauges */}
-                <div className="space-y-6">
+            <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+
+                {/* 1. CA HT Main Focus */}
+                <div className="col-span-1 border-r border-slate-100 pr-6 hidden lg:block">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Chiffre d'Affaires HT</p>
+                    <div className="text-3xl font-black text-slate-900 tracking-tight">
+                        {yearlyStats.totalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}€
+                    </div>
+                    <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
+                        <span>Plafond: {MICRO_THRESHOLD.toLocaleString()}€</span>
+                        <div className="h-1 w-1 rounded-full bg-slate-300"></div>
+                        <span>{(microProgress).toFixed(1)}%</span>
+                    </div>
+                </div>
+
+                {/* Mobile version of CA (if needed) or merged */}
+                <div className="lg:hidden">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Chiffre d'Affaires HT</p>
+                    <div className="text-3xl font-black text-slate-900 tracking-tight">
+                        {yearlyStats.totalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}€
+                    </div>
+                </div>
+
+                {/* 2. Compact Gauges */}
+                <div className="col-span-1 space-y-5">
+
+                    {/* TVA Threshold */}
                     <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold text-slate-600 text-sm uppercase tracking-wider">Chiffre d'Affaires HT</h4>
+                        <div className="flex justify-between items-center mb-1.5">
+                            <span className="text-xs font-bold text-slate-700">Seuil TVA</span>
+                            <span className="text-xs font-medium text-slate-500">{yearlyStats.totalHT.toFixed(0)} / {VAT_THRESHOLD.toLocaleString()}€</span>
                         </div>
-                        <div className="text-3xl font-black text-slate-800">
-                            {yearlyStats.totalHT.toFixed(2)}€
+                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full rounded-full transition-all duration-1000 ${yearlyStats.totalHT > VAT_THRESHOLD ? 'bg-amber-500' : 'bg-indigo-600'}`}
+                                style={{ width: `${Math.max(vatProgress, 2)}%` }}
+                            />
                         </div>
+                        {remainingVat > 0 && (
+                            <p className="text-[10px] text-slate-400 mt-1 text-right">encore {remainingVat.toLocaleString()}€</p>
+                        )}
                     </div>
 
-                    <div className="space-y-6">
-                        {/* Jauge TVA */}
-                        <div>
-                            <div className="flex justify-between items-end mb-2">
-                                <span className="text-sm font-bold text-slate-700">Seuil Franchise TVA (37 500€)</span>
-                                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{vatProgress.toFixed(1)}%</span>
-                            </div>
-                            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden mb-2">
-                                <div
-                                    className={`h-full rounded-full transition-all duration-1000 ${yearlyStats.totalHT > VAT_THRESHOLD ? 'bg-amber-500' : 'bg-indigo-600'}`}
-                                    style={{ width: `${Math.max(vatProgress, yearlyStats.totalHT > 0 ? 2 : 0)}%` }}
-                                />
-                            </div>
-                            <div className="flex items-start gap-2 text-xs text-slate-500">
-                                <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
-                                {yearlyStats.totalHT < VAT_THRESHOLD ? (
-                                    <span>Encore <strong className="text-slate-700">{remainingVat.toFixed(2)}€</strong> avant de devoir facturer la TVA.</span>
-                                ) : (
-                                    <span className="text-amber-600 font-bold">Vous avez dépassé le seuil. Vous devez facturer la TVA.</span>
-                                )}
-                            </div>
+                    {/* Micro Threshold */}
+                    <div>
+                        <div className="flex justify-between items-center mb-1.5">
+                            <span className="text-xs font-bold text-slate-700">Plafond Micro</span>
+                            <span className="text-xs font-medium text-slate-500">{yearlyStats.totalHT.toFixed(0)} / {MICRO_THRESHOLD.toLocaleString()}€</span>
                         </div>
-
-                        {/* Jauge Micro */}
-                        <div>
-                            <div className="flex justify-between items-end mb-2">
-                                <span className="text-sm font-bold text-slate-700">Plafond Micro-Entreprise (77 700€)</span>
-                                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{microProgress.toFixed(1)}%</span>
-                            </div>
-                            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden mb-2">
-                                <div
-                                    className={`h-full rounded-full transition-all duration-1000 ${yearlyStats.totalHT > MICRO_THRESHOLD ? 'bg-red-500' : 'bg-blue-500'}`}
-                                    style={{ width: `${Math.max(microProgress, yearlyStats.totalHT > 0 ? 2 : 0)}%` }}
-                                />
-                            </div>
-                            <div className="flex items-start gap-2 text-xs text-slate-500">
-                                <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
-                                {yearlyStats.totalHT < MICRO_THRESHOLD ? (
-                                    <span>Encore <strong className="text-slate-700">{remainingMicro.toFixed(2)}€</strong> avant le changement de régime.</span>
-                                ) : (
-                                    <span className="text-red-600 font-bold">Plafond dépassé. Attention au changement de régime fiscal.</span>
-                                )}
-                            </div>
+                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full rounded-full transition-all duration-1000 ${yearlyStats.totalHT > MICRO_THRESHOLD ? 'bg-red-500' : 'bg-blue-500'}`}
+                                style={{ width: `${Math.max(microProgress, 2)}%` }}
+                            />
                         </div>
                     </div>
                 </div>
 
-                {/* Right Column: Treasury (Trésorerie TVA) */}
-                <div className="bg-slate-50 rounded-xl p-6 border border-slate-100 flex flex-col justify-between">
-                    <div>
-                        <div className="flex items-center gap-2 mb-4">
-                            <PiggyBank className="w-5 h-5 text-emerald-600" />
-                            <h4 className="font-bold text-slate-800">Trésorerie TVA</h4>
-                        </div>
-
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center py-2 border-b border-slate-200 border-dashed">
-                                <span className="text-sm text-slate-600">TVA Collectée</span>
-                                <span className="font-bold text-slate-800">{yearlyStats.totalVAT.toFixed(2)}€</span>
-                            </div>
-                            <div className="flex justify-between items-center py-2 border-b border-slate-200 border-dashed">
-                                <span className="text-sm text-slate-600">TVA Récupérable (sur achats)</span>
-                                <span className="font-bold text-green-600">-{yearlyStats.totalVATDeductible.toFixed(2)}€</span>
-                            </div>
-                        </div>
+                {/* 3. Minimalist TVA Treasury */}
+                <div className="col-span-1 bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Wallet className="w-4 h-4 text-slate-400" />
+                        <h4 className="font-bold text-slate-700 text-sm">TVA à reverser</h4>
                     </div>
 
-                    <div className="mt-6 pt-4 border-t border-slate-200">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-bold text-slate-700 uppercase">Estimation à reverser</span>
-                            <span className={`text-xl font-black ${vatBalance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                {vatBalance.toFixed(2)}€
-                            </span>
+                    <div className={`text-2xl font-black mb-2 ${vatBalance > 0 ? 'text-slate-800' : 'text-emerald-600'}`}>
+                        {vatBalance > 0 ? vatBalance.toFixed(2) : 0}€
+                    </div>
+
+                    {/* Collapsed details */}
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-3 border-t border-slate-200">
+                        <div className="flex flex-col">
+                            <span>Collectée</span>
+                            <span className="font-medium text-slate-600">{yearlyStats.totalVAT.toFixed(0)}€</span>
                         </div>
-                        <p className="text-xs text-slate-400 italic leading-relaxed">
-                            {vatBalance >= 0
-                                ? "Cette somme ne vous appartient pas. Gardez-la de côté pour le reversement aux impôts."
-                                : "Vous avez un crédit de TVA. L'État vous doit cette somme (ou reportable)."
-                            }
-                        </p>
+                        <div className="flex flex-col items-end">
+                            <span>Déductible</span>
+                            <span className="font-medium text-slate-600">-{yearlyStats.totalVATDeductible.toFixed(0)}€</span>
+                        </div>
                     </div>
                 </div>
             </div>

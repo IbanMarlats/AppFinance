@@ -7,6 +7,7 @@ export default function Register({ onSwitch }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('');
+    const [declarationFrequency, setDeclarationFrequency] = useState('monthly');
     const [newsletter, setNewsletter] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
@@ -26,7 +27,7 @@ export default function Register({ onSwitch }) {
         }
 
         try {
-            await register(email.trim(), password, role, newsletter);
+            await register(email.trim(), password, role, newsletter, declarationFrequency);
         } catch (err) {
             setError(err.response?.data?.error || 'Registration failed');
         }
@@ -85,6 +86,39 @@ export default function Register({ onSwitch }) {
                         <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                             <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                         </div>
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Fréquence de déclaration URSSAF</label>
+                    <div className="flex gap-4">
+                        <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${declarationFrequency === 'monthly'
+                                ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-bold'
+                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}>
+                            <input
+                                type="radio"
+                                name="declaration"
+                                value="monthly"
+                                checked={declarationFrequency === 'monthly'}
+                                onChange={(e) => setDeclarationFrequency(e.target.value)}
+                                className="hidden"
+                            />
+                            Mensuelle
+                        </label>
+                        <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${declarationFrequency === 'quarterly'
+                                ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-bold'
+                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}>
+                            <input
+                                type="radio"
+                                name="declaration"
+                                value="quarterly"
+                                checked={declarationFrequency === 'quarterly'}
+                                onChange={(e) => setDeclarationFrequency(e.target.value)}
+                                className="hidden"
+                            />
+                            Trimestrielle
+                        </label>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">

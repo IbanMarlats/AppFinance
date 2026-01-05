@@ -13,7 +13,7 @@ const router = express.Router();
 
 // Register
 router.post('/register', async (req, res) => {
-    let { email, password, role, newsletter } = req.body;
+    let { email, password, role, newsletter, declaration_frequency } = req.body;
 
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password required' });
@@ -38,8 +38,8 @@ router.post('/register', async (req, res) => {
     const isNewsletter = newsletter === true ? 1 : 0;
 
     db.run(
-        "INSERT INTO users (id, email_hash, email_encrypted, password_hash, verification_token, role, created_at, newsletter) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [id, emailHash, emailEncrypted, hashedPassword, verificationToken, role, createdAt, isNewsletter],
+        "INSERT INTO users (id, email_hash, email_encrypted, password_hash, verification_token, role, created_at, newsletter, declaration_frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [id, emailHash, emailEncrypted, hashedPassword, verificationToken, role, createdAt, isNewsletter, declaration_frequency || 'monthly'],
         function (err) {
             if (err) {
                 if (err.message.includes('UNIQUE constraint failed')) {
@@ -93,7 +93,7 @@ router.post('/register', async (req, res) => {
                 sameSite: 'lax',
                 secure: process.env.NODE_ENV === 'production'
             });
-            res.status(201).json({ message: 'User created. Please check email.', user: { id, email, is_verified: 0, role } });
+            res.status(201).json({ message: 'User created. Please check email.', user: { id, email, is_verified: 0, role, declaration_frequency: declaration_frequency || 'monthly' } });
         }
     );
 });
@@ -147,8 +147,10 @@ router.post('/login', (req, res) => {
                 is_verified: !!user.is_verified,
                 role: user.role || 'admin',
                 is_premium: !!user.is_premium,
+                is_premium: !!user.is_premium,
                 subscription_plan: user.subscription_plan,
-                premium_until: user.premium_until
+                premium_until: user.premium_until,
+                declaration_frequency: user.declaration_frequency
             }
         });
     });
@@ -206,9 +208,8 @@ router.post('/resend-verification', (req, res) => {
     });
 });
 
-// Get Current User (Session check)
 router.get('/me', authenticateToken, (req, res) => {
-    db.get("SELECT email_encrypted, is_verified, role, is_premium, is_gift, created_at, subscription_plan, subscription_status, premium_until, trial_until, is_subject_vat, vat_start_date FROM users WHERE id = ?", [req.user.id], (err, row) => {
+    db.get("SELECT email_encrypted, is_verified, role, is_premium, is_gift, created_at, subscription_plan, subscription_status, premium_until, trial_until, is_subject_vat, vat_start_date, declaration_frequency FROM users WHERE id = ?", [req.user.id], (err, row) => {
         if (!row) return res.status(404).json({ error: "User not found" });
         try {
             res.json({
@@ -224,7 +225,8 @@ router.get('/me', authenticateToken, (req, res) => {
                 premium_until: row.premium_until,
                 trial_until: row.trial_until,
                 is_subject_vat: !!row.is_subject_vat,
-                vat_start_date: row.vat_start_date
+                vat_start_date: row.vat_start_date,
+                declaration_frequency: row.declaration_frequency
             });
         } catch (e) {
             console.error("Decryption failed for user " + req.user.id + ":", e);
@@ -238,7 +240,7 @@ router.get('/me', authenticateToken, (req, res) => {
 
 // Update Profile (VAT)
 router.put('/me', authenticateToken, (req, res) => {
-    const { is_subject_vat, vat_start_date, role } = req.body;
+    const { is_subject_vat, vat_start_date, role, declaration_frequency } = req.body;
 
     // Validate inputs if needed (date format etc)
 
@@ -264,6 +266,13 @@ router.put('/me', authenticateToken, (req, res) => {
         if (allowedRoles.includes(role)) {
             fields.push("role = ?");
             values.push(role);
+        }
+    }
+
+    if (declaration_frequency !== undefined) {
+        if (['monthly', 'quarterly'].includes(declaration_frequency)) {
+            fields.push("declaration_frequency = ?");
+            values.push(declaration_frequency);
         }
     }
 

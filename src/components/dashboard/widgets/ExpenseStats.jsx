@@ -1,4 +1,5 @@
 import { useFinance } from '../../../context/FinanceContext';
+import { hexToRgba } from '../../ui/ColorPicker';
 
 export default function ExpenseStats({ expenses }) {
     const { categories } = useFinance();
@@ -34,7 +35,18 @@ export default function ExpenseStats({ expenses }) {
 
                             return (
                                 <tr key={catName} className="hover:bg-slate-50">
-                                    <td className="px-4 py-3 font-medium text-slate-900">{catName}</td>
+                                    <td className="px-4 py-3">
+                                        <span
+                                            className="px-2 py-1 rounded text-xs font-bold border shadow-sm transition-colors"
+                                            style={{
+                                                backgroundColor: catColor ? hexToRgba(catColor, 0.1) : '#f8fafc',
+                                                color: catColor || '#475569',
+                                                borderColor: catColor ? hexToRgba(catColor, 0.3) : '#cbd5e1'
+                                            }}
+                                        >
+                                            {catName}
+                                        </span>
+                                    </td>
                                     <td className="px-4 py-3 text-right font-medium text-slate-700">{amount.toFixed(2)}€</td>
                                     <td className="px-4 py-3 text-right text-slate-500">{percent.toFixed(1)}%</td>
                                     <td className="px-4 py-3">

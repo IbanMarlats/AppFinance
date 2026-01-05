@@ -32,39 +32,7 @@ export default function GoalsDashboard() {
     const fetchData = async () => {
         setLoading(true);
 
-        // FREE VERSION: FAKE DATA + BLUR
-        if (!user.is_premium) {
-            // Fake Goals
-            const fakeGoals = [
-                { type: 'revenue', period: 'year', target_amount: 150000, period_key: String(year) },
-                { type: 'expense', period: 'year', target_amount: 50000, period_key: String(year) }
-            ];
-
-            // Fake Stats
-            const fakeStats = {
-                totalIncome: 124500.50,
-                totalExpenses: 42300.20,
-                monthlyIncome: {},
-                monthlyExpenses: {}
-            };
-
-            // Populate monthly fake data
-            for (let i = 1; i <= 12; i++) {
-                const k = `${year}-${String(i).padStart(2, '0')}`;
-                fakeStats.monthlyIncome[k] = 10000 + (Math.random() * 5000);
-                fakeStats.monthlyExpenses[k] = 3000 + (Math.random() * 2000);
-
-                // Add fake monthly goals
-                fakeGoals.push({ type: 'revenue', period: 'month', target_amount: 12500, period_key: k });
-                fakeGoals.push({ type: 'expense', period: 'month', target_amount: 4000, period_key: k });
-            }
-
-            setGoals(fakeGoals);
-            setStats(fakeStats);
-            initializeInputs(fakeGoals);
-            setLoading(false);
-            return;
-        }
+        // Fetch Real Data for everyone (Free & Premium)
 
         try {
             // Fetch Goals
@@ -260,7 +228,7 @@ export default function GoalsDashboard() {
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 relative">
+        <div className={`space-y-8 animate-in fade-in duration-500 relative ${!user.is_premium ? 'min-h-[800px]' : ''}`}>
             {/* Global Premium Overlay */}
             {!user.is_premium && (
                 <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 animate-in fade-in duration-700">

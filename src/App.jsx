@@ -25,23 +25,36 @@ import RecapDashboard from './components/dashboard/RecapDashboard';
 import UnverifiedBanner from './components/ui/UnverifiedBanner';
 import CookieConsent from './components/ui/CookieConsent';
 
-import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
+import { useNavigate, useLocation, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import PremiumPage from './components/payment/PremiumPage';
 import PaymentResult from './components/payment/PaymentResult';
 
 function FinanceApp() {
-  const [tab, setTabState] = useState(() => localStorage.getItem('active_tab') || 'income');
+  const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const setTab = (newTab) => {
-    // If we are on a route like /premium, navigation to a tab should maybe redirect to / ?
-    // Or we keep simple hash-like tab navigation on home path.
-    if (location.pathname !== '/') {
-      navigate('/');
+  // Determine active tab from URL or LocalStorage
+  const queryTab = searchParams.get('tab');
+
+  // Effect to set default tab in URL if missing on root
+  useEffect(() => {
+    if (location.pathname === '/' && !queryTab) {
+      const savedTab = localStorage.getItem('active_tab') || 'income';
+      setSearchParams({ tab: savedTab }, { replace: true });
     }
-    setTabState(newTab);
+  }, [location.pathname, queryTab]);
+
+  // Derived state for rendering
+  const tab = queryTab || 'income';
+
+  const setTab = (newTab) => {
     localStorage.setItem('active_tab', newTab);
+    if (location.pathname !== '/') {
+      navigate(`/?tab=${newTab}`);
+    } else {
+      setSearchParams({ tab: newTab });
+    }
   };
 
   const { user, logout, loading } = useAuth();

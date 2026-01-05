@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
 import { SlidersHorizontal, Lightbulb, X, Send, Crown, Lock } from 'lucide-react';
+import { hexToRgba } from '../ui/ColorPicker';
 import PremiumSubscriptionBlock from '../ui/PremiumSubscriptionBlock';
 import ExpenseStats from './widgets/ExpenseStats';
 import EcommerceStats from './widgets/EcommerceStats';
@@ -21,22 +22,9 @@ export default function StatsDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
 
-    // Fake Data Logic for Free Users
-    const incomes = user.is_premium ? realIncomes : Array.from({ length: 50 }, (_, i) => ({
-        id: `fake-inc-${i}`,
-        amount: 2000 + Math.random() * 3000,
-        date: new Date(new Date().getFullYear(), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),
-        platformId: platforms[0]?.id,
-        status: 'confirmed'
-    }));
-
-    const expenses = user.is_premium ? realExpenses : Array.from({ length: 30 }, (_, i) => ({
-        id: `fake-exp-${i}`,
-        amount: 100 + Math.random() * 500,
-        date: new Date(new Date().getFullYear(), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),
-        category: 'Logiciel',
-        is_recurring: Math.random() > 0.8
-    }));
+    // Use Real Data for Everyone (Free & Premium)
+    const incomes = realIncomes;
+    const expenses = realExpenses;
 
     // Year Filtering
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -213,8 +201,10 @@ export default function StatsDashboard() {
     // 1. By Platform (using filtered incomes)
     const byPlatform = filteredIncomes.reduce((acc, curr) => {
         const pId = curr.platformId;
-        const pName = platforms.find(p => p.id === pId)?.name || 'Inconnu';
-        if (!acc[pId]) acc[pId] = { name: pName, gross: 0, net1: 0, final: 0 };
+        const platform = platforms.find(p => p.id === pId);
+        const pName = platform?.name || 'Inconnu';
+        const pColor = platform?.color;
+        if (!acc[pId]) acc[pId] = { name: pName, color: pColor, gross: 0, net1: 0, final: 0 };
 
         const { gross, net1, final } = calculate(curr);
         acc[pId].gross += gross;
@@ -296,24 +286,9 @@ export default function StatsDashboard() {
     return (
         <div className="relative">
             {/* Global Premium Overlay */}
-            {!user.is_premium && (
-                <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 animate-in fade-in duration-700">
-                    <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-2xl border border-slate-100 relative overflow-hidden transform hover:scale-105 transition-transform duration-300 sticky top-20">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-                                <Lock size={28} />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-900">Premium Requis</h2>
-                                <p className="text-sm text-slate-500">Accédez aux statistiques avancées</p>
-                            </div>
-                        </div>
-                        <PremiumSubscriptionBlock />
-                    </div>
-                </div>
-            )}
 
-            <div className={`p-6 ${!user.is_premium ? 'opacity-80 pointer-events-none select-none filter blur-[2px] overflow-hidden max-h-[1200px]' : ''}`}>
+
+            <div className={`p-6`}>
                 <div className="flex flex-col md:flex-row justify-end items-center gap-4 mb-6">
                     <div className="relative">
                         <button
@@ -407,13 +382,13 @@ export default function StatsDashboard() {
                 {user.role === 'ecommerce' && user.is_premium && (
                     <EcommerceStats year={selectedYear} />
                 )}
-                {user.role === 'artisan' && (
+                {user.role === 'artisan' && user.is_premium && (
                     <ArtisanStats year={selectedYear} />
                 )}
-                {user.role === 'creator' && (
+                {user.role === 'creator' && user.is_premium && (
                     <CreatorStats year={selectedYear} />
                 )}
-                {user.role === 'field_service' && (
+                {user.role === 'field_service' && user.is_premium && (
                     <ServiceStats year={selectedYear} />
                 )}
 
@@ -530,10 +505,28 @@ export default function StatsDashboard() {
                 )}
 
                 {
-                    user.is_premium && visibleSections.platforms && (
-                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+                    visibleSections.platforms && (
+                        <div className={`bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8 relative overflow-hidden ${!user.is_premium ? 'min-h-[400px]' : ''}`}>
                             <h2 className="text-lg font-bold text-slate-800 mb-6">Détail Revenus par Plateforme</h2>
-                            <div className="overflow-x-auto">
+
+                            {!user.is_premium && (
+                                <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 text-center">
+                                    <div className="bg-amber-100 p-3 rounded-full mb-3">
+                                        <Crown className="w-8 h-8 text-amber-600" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-900 mb-2">Réservé aux membres Premium</h3>
+                                    <p className="text-slate-500 max-w-sm mb-6">Débloquez le détail de vos revenus par plateforme et bien plus encore.</p>
+                                    <button
+                                        onClick={() => navigate('/premium')}
+                                        className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+                                    >
+                                        <Lock className="w-4 h-4" />
+                                        Débloquer ce tableau
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className={`overflow-x-auto ${!user.is_premium ? 'blur-md select-none opacity-50' : ''}`}>
                                 <table className="w-full text-left text-sm">
                                     <thead>
                                         <tr className="border-b border-slate-200">
@@ -546,7 +539,18 @@ export default function StatsDashboard() {
                                     <tbody className="divide-y divide-slate-100">
                                         {Object.values(byPlatform).map((item, idx) => (
                                             <tr key={idx} className="hover:bg-slate-50">
-                                                <td className="px-4 py-3"><span className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-700 font-medium">{item.name}</span></td>
+                                                <td className="px-4 py-3">
+                                                    <span
+                                                        className="px-2 py-1 rounded text-xs font-bold border shadow-sm transition-colors"
+                                                        style={{
+                                                            backgroundColor: item.color ? hexToRgba(item.color, 0.1) : '#f8fafc',
+                                                            color: item.color || '#475569',
+                                                            borderColor: item.color ? hexToRgba(item.color, 0.3) : '#cbd5e1'
+                                                        }}
+                                                    >
+                                                        {item.name}
+                                                    </span>
+                                                </td>
                                                 <td className="px-4 py-3 text-right text-slate-600">{item.gross.toFixed(2)}€</td>
                                                 <td className="px-4 py-3 text-right text-slate-500">{item.net1.toFixed(2)}€</td>
                                                 <td className="px-4 py-3 text-right font-bold text-emerald-600">{item.final.toFixed(2)}€</td>

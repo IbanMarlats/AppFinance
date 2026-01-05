@@ -66,6 +66,8 @@ db.serialize(() => {
   addColumnIfNotExists(db, 'users', 'vat_start_date', "TEXT");
   addColumnIfNotExists(db, 'users', 'stripe_customer_id', "TEXT");
   addColumnIfNotExists(db, 'users', 'has_used_trial', "BOOLEAN DEFAULT 0");
+  addColumnIfNotExists(db, 'users', 'declaration_frequency', "TEXT DEFAULT 'monthly'"); // 'monthly', 'quarterly'
+
 
   // Platforms
   db.run(`CREATE TABLE IF NOT EXISTS platforms (
@@ -221,6 +223,17 @@ db.serialize(() => {
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id),
     UNIQUE(user_id, month, year)
+  )`);
+
+  // Annual Recaps
+  db.run(`CREATE TABLE IF NOT EXISTS yearly_recaps (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    year INTEGER,
+    data TEXT, -- JSON string of the annual stats
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    UNIQUE(user_id, year)
   )`);
 
   // Notifications

@@ -116,6 +116,46 @@ export default function UserProfile() {
                                 </div>
                             )}
 
+
+
+                            {/* Declaration Frequency Selector */}
+                            {loading === 'freq' ? (
+                                <span className="px-3 py-1 rounded-full text-sm font-medium bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-2">
+                                    <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                                    ...
+                                </span>
+                            ) : (
+                                <div className="relative group">
+                                    <select
+                                        className="appearance-none pl-8 pr-8 py-1 rounded-full text-sm font-medium bg-slate-50 text-slate-600 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-200 hover:bg-slate-100 cursor-pointer transition-all"
+                                        value={user.declaration_frequency || 'monthly'}
+                                        onChange={async (e) => {
+                                            const newFreq = e.target.value;
+                                            if (newFreq === user.declaration_frequency) return;
+
+                                            setLoading('freq');
+                                            try {
+                                                await axios.put('http://localhost:3001/api/auth/me', { declaration_frequency: newFreq }, { withCredentials: true });
+                                                window.location.reload();
+                                            } catch (err) {
+                                                console.error(err);
+                                                alert("Erreur lors de la mise à jour de la fréquence");
+                                                setLoading(null);
+                                            }
+                                        }}
+                                    >
+                                        <option value="monthly">Décl. Mensuelle</option>
+                                        <option value="quarterly">Décl. Trimestrielle</option>
+                                    </select>
+                                    <Calendar size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" />
+                                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M6 9l6 6 6-6" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            )}
+
                             <span className={`px-3 py-1 rounded-full text-sm font-medium border flex items-center gap-1.5 ${user.is_verified
                                 ? 'bg-green-50 text-green-700 border-green-200'
                                 : 'bg-amber-50 text-amber-700 border-amber-200'
@@ -146,15 +186,20 @@ export default function UserProfile() {
                                         <p className="text-sm text-amber-600 font-medium mb-1">Plan actuel</p>
                                         <div className="flex items-center gap-2">
                                             <p className="text-lg font-bold text-amber-900">
-                                                {user.trial_until && new Date(user.trial_until) > new Date() ? 'Essai Gratuit' : 'Premium'} {
-                                                    user.subscription_plan === 'lifetime' ? 'À Vie' :
-                                                        user.subscription_plan === 'annual' ? 'Annuel' :
+                                                {(() => {
+                                                    const isGift = user.is_gift || user.subscription_plan?.startsWith('gift');
+                                                    if (user.trial_until && new Date(user.trial_until) > new Date()) return 'Essai Gratuit';
+                                                    if (isGift) return 'Premium Offert';
+                                                    return 'Premium';
+                                                })()} {
+                                                    user.subscription_plan === 'lifetime' || user.subscription_plan === 'gift_lifetime' ? 'À Vie' :
+                                                        (user.subscription_plan === 'annual' || user.subscription_plan === 'gift_annual') ? 'Annuel' :
                                                             'Mensuel'
                                                 }
                                             </p>
                                             {user.trial_until && new Date(user.trial_until) > new Date() ? (
                                                 <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-200 text-blue-800 border border-blue-300 uppercase tracking-wide">ESSAI</span>
-                                            ) : user.is_gift ? (
+                                            ) : (user.is_gift || user.subscription_plan?.startsWith('gift')) ? (
                                                 <span className="px-2 py-0.5 rounded text-xs font-bold bg-pink-200 text-pink-800 border border-pink-300 uppercase tracking-wide">OFFERT</span>
                                             ) : (
                                                 <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-200 text-amber-800 border border-amber-300 uppercase tracking-wide">PRO</span>
@@ -197,6 +242,7 @@ export default function UserProfile() {
                                 <ul className="space-y-3">
                                     {[
                                         'Tableau de bord avancé & KPI illimités',
+                                        'Récapitulatif mensuel & Bilan',
                                         'Objectifs mensuels & Suivi de budget',
                                         'Export PDF & CSV comptable',
                                         'Support prioritaire & Accès VIP',

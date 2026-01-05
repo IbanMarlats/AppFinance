@@ -1391,7 +1391,14 @@ export default function IncomeTable(props) {
                                         {inc.status === 'quote_sent' && <span className="ml-2 bg-amber-100 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded text-xs font-bold">DEVIS</span>}
                                     </td>}
                                     {visibleColumns.platform && <td className="px-4 py-3">
-                                        <span className="px-2 py-1 rounded-md bg-white text-xs font-semibold text-slate-700 border border-slate-200 shadow-sm">
+                                        <span
+                                            className="px-2 py-1 rounded-md text-xs font-bold border shadow-sm transition-colors"
+                                            style={{
+                                                backgroundColor: p?.color ? hexToRgba(p.color, 0.1) : '#f8fafc',
+                                                color: p?.color || '#475569',
+                                                borderColor: p?.color ? hexToRgba(p.color, 0.3) : '#cbd5e1'
+                                            }}
+                                        >
                                             {p ? p.name : 'Autre'}
                                         </span>
                                     </td>}
