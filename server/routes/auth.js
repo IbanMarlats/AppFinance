@@ -48,12 +48,23 @@ router.post('/register', async (req, res) => {
                 return res.status(500).json({ error: err.message });
             }
 
-            // Seed Default Platforms (Malt, Freework, Hors Plateforme)
-            const defaults = [
-                { name: 'Malt', taxRate: 10, fixed_fee: 0, fee_vat_rate: 20, color: '#ef4444' }, // Red
-                { name: 'Freework', taxRate: 0, fixed_fee: 0, fee_vat_rate: 0, color: '#3b82f6' }, // Blue
-                { name: 'Hors Plateforme', taxRate: 0, fixed_fee: 0, fee_vat_rate: 0, color: '#64748b' } // Slate
-            ];
+            // Seed Default Platforms based on Role
+            let defaults = [];
+
+            if (role === 'ecommerce') {
+                defaults = [
+                    { name: 'Amazon', taxRate: 0, fixed_fee: 0, fee_vat_rate: 0, color: '#ff9900' }, // Orange
+                    { name: 'Etsy', taxRate: 0, fixed_fee: 0, fee_vat_rate: 0, color: '#f1641e' }, // Orange Red
+                    { name: 'Shopify', taxRate: 0, fixed_fee: 0, fee_vat_rate: 0, color: '#96bf48' }, // Green
+                    { name: 'Hors Plateforme', taxRate: 0, fixed_fee: 0, fee_vat_rate: 0, color: '#64748b' } // Slate
+                ];
+            } else {
+                defaults = [
+                    { name: 'Malt', taxRate: 10, fixed_fee: 0, fee_vat_rate: 20, color: '#ef4444' }, // Red
+                    { name: 'Freework', taxRate: 0, fixed_fee: 0, fee_vat_rate: 0, color: '#3b82f6' }, // Blue
+                    { name: 'Hors Plateforme', taxRate: 0, fixed_fee: 0, fee_vat_rate: 0, color: '#64748b' } // Slate
+                ];
+            }
 
             defaults.forEach(def => {
                 const pid = uuidv4();

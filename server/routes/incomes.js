@@ -23,7 +23,8 @@ router.post('/', (req, res) => {
         distance_km,
         vat_rate,
         recurring_end_date,
-        tax_category
+        tax_category,
+        product_ref, unit_price, quantity, unit_cost, shipping_fees, transaction_fees
     } = req.body;
 
     // Validation
@@ -55,7 +56,9 @@ router.post('/', (req, res) => {
         channel_source: channel_source || null, income_type: income_type || 'active',
         invoice_date: invoice_date || null,
         distance_km: distance_km || 0, vat_rate: rate, vat_amount: vatAmount,
-        tax_category: tax_category || 'bnc'
+        tax_category: tax_category || 'bnc',
+        product_ref: product_ref || null, unit_price: unit_price || 0, quantity: quantity || 1,
+        unit_cost: unit_cost || 0, shipping_fees: shipping_fees || 0, transaction_fees: transaction_fees || 0
     };
 
 
@@ -92,8 +95,9 @@ router.post('/', (req, res) => {
         cogs, shipping_cost, status,
         material_cost, hours_spent,
         channel_source, income_type, invoice_date,
-        distance_km, vat_rate, vat_amount, tax_category
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+        distance_km, vat_rate, vat_amount, tax_category,
+        product_ref, unit_price, quantity, unit_cost, shipping_fees, transaction_fees
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
 
     const runInsert = (entry) => {
         return new Promise((resolve, reject) => {
@@ -103,7 +107,9 @@ router.post('/', (req, res) => {
                 entry.cogs, entry.shipping_cost, entry.status,
                 entry.material_cost, entry.hours_spent,
                 entry.channel_source, entry.income_type, entry.invoice_date,
-                entry.distance_km, entry.vat_rate, entry.vat_amount, entry.tax_category
+                entry.distance_km, entry.vat_rate, entry.vat_amount, entry.tax_category,
+                entry.product_ref || null, entry.unit_price || 0, entry.quantity || 1,
+                entry.unit_cost || 0, entry.shipping_fees || 0, entry.transaction_fees || 0
             ], (err) => {
                 if (err) reject(err);
                 else resolve();
@@ -161,7 +167,8 @@ router.put('/:id', (req, res) => {
             cogs = ?, shipping_cost = ?, status = ?,
             material_cost = ?, hours_spent = ?,
             channel_source = ?, income_type = ?, invoice_date = ?,
-            distance_km = ?, vat_rate = ?, vat_amount = ?, tax_category = ?
+            distance_km = ?, vat_rate = ?, vat_amount = ?, tax_category = ?,
+            product_ref = ?, unit_price = ?, quantity = ?, unit_cost = ?, shipping_fees = ?, transaction_fees = ?
         WHERE id = ? AND user_id = ?`,
         [
             name, amount, date, platformId, is_recurring ? 1 : 0, tjm || null,
@@ -169,6 +176,8 @@ router.put('/:id', (req, res) => {
             material_cost || 0, hours_spent || 0,
             channel_source || null, income_type || 'active', invoice_date || null,
             distance_km || 0, rate, vatAmount, tax_category || 'bnc',
+            req.body.product_ref || null, req.body.unit_price || 0, req.body.quantity || 1,
+            req.body.unit_cost || 0, req.body.shipping_fees || 0, req.body.transaction_fees || 0,
             req.params.id, req.user.id
         ],
         function (err) {
@@ -177,7 +186,9 @@ router.put('/:id', (req, res) => {
                 id: req.params.id, name, amount, date, platformId, is_recurring: !!is_recurring, tjm,
                 cogs, shipping_cost, status,
                 material_cost, hours_spent, channel_source, income_type, invoice_date, distance_km,
-                vat_rate: rate, vat_amount: vatAmount, tax_category: tax_category || 'bnc'
+                vat_rate: rate, vat_amount: vatAmount, tax_category: tax_category || 'bnc',
+                product_ref: req.body.product_ref, unit_price: req.body.unit_price, quantity: req.body.quantity,
+                unit_cost: req.body.unit_cost, shipping_fees: req.body.shipping_fees, transaction_fees: req.body.transaction_fees
             });
         }
     );

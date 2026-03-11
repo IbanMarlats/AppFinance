@@ -15,11 +15,6 @@ export default function IncomeTable(props) {
     const { user, refreshUser } = useAuth(); // Add refreshUser
     const isEcommerce = user?.role === 'ecommerce';
 
-    useEffect(() => {
-        if (user?.is_subject_vat) {
-            setVatRate('20');
-        }
-    }, [user?.is_subject_vat]);
 
     // ... existing state ...
 
@@ -52,7 +47,11 @@ export default function IncomeTable(props) {
     const [recurringEndDate, setRecurringEndDate] = useState('');
     const [tjm, setTjm] = useState('');
     const [vatRate, setVatRate] = useState('0');
-    const [addFormEcommerce, setAddFormEcommerce] = useState({ cogs: '', shipping_cost: '' });
+    const [addFormEcommerce, setAddFormEcommerce] = useState({
+        cogs: '', shipping_cost: '', // Legacy/Compat
+        product_ref: '', unit_price: '', quantity: '1', unit_cost: '',
+        shipping_fees: '', transaction_fees: ''
+    });
     const [addFormRole, setAddFormRole] = useState({
         material_cost: '', hours_spent: '',
         channel_source: '', income_type: 'active', invoice_date: '',
@@ -75,6 +74,46 @@ export default function IncomeTable(props) {
     // Pagination State
     const [visibleLimit, setVisibleLimit] = useState(10);
     const [sortOrder, setSortOrder] = useState('desc');
+    const [isAmountTTC, setIsAmountTTC] = useState(false);
+
+    useEffect(() => {
+        if (user?.is_subject_vat) {
+            setVatRate('20');
+        }
+    }, [user?.is_subject_vat]);
+
+    // Auto-calculate E-commerce Amount
+    useEffect(() => {
+        if (isEcommerce) {
+            const price = parseFloat(addFormEcommerce.unit_price) || 0;
+            const qty = parseInt(addFormEcommerce.quantity) || 0;
+            const shipping = parseFloat(addFormEcommerce.shipping_fees) || 0;
+            const vat = parseFloat(vatRate) || 0;
+
+            // Total TTC = (Price * Qty) + Shipping
+            const totalTTC = (price * qty) + shipping;
+
+            // Amount is ALWAYS HT in the system
+            // HT = TTC / (1 + vat/100)
+            const amountHT = totalTTC / (1 + (vat / 100));
+
+            setAmount(amountHT.toFixed(2));
+        }
+    }, [addFormEcommerce.unit_price, addFormEcommerce.quantity, addFormEcommerce.shipping_fees, vatRate, isEcommerce]);
+
+
+    // Auto-calculate Transaction Fees
+    useEffect(() => {
+        if (isEcommerce && platformId) {
+            const p = platforms.find(pl => pl.id === platformId);
+            if (p) {
+                const revenue = parseFloat(amount) || 0;
+                // Fee = (Revenue * % ) + Fixed
+                const fee = (revenue * (p.taxRate / 100)) + (p.fixed_fee || 0);
+                setAddFormEcommerce(prev => ({ ...prev, transaction_fees: fee.toFixed(2) }));
+            }
+        }
+    }, [amount, platformId, isEcommerce, platforms]);
 
     const regularizeMonth = async () => {
         const currentMonth = new Date().getMonth();
@@ -98,7 +137,7 @@ export default function IncomeTable(props) {
         }
     };
 
-    const [isAmountTTC, setIsAmountTTC] = useState(false);
+
 
     const resetForm = () => {
         setDesc('');
@@ -249,11 +288,17 @@ export default function IncomeTable(props) {
         fee: true,
         deductibleVat: true,
         urssaf: true,
-        net: true
+        net: true,
+        // E-commerce columns
+        quantity: true,
+        unit_price: true,
+        shipping_fees: true,
+        transaction_fees: true,
+        unit_cost: true
     });
     const [showColumnMenu, setShowColumnMenu] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         const newErrors = {};
@@ -314,12 +359,56 @@ export default function IncomeTable(props) {
                 distance_km: addFormRole.distance_km ? parseFloat(addFormRole.distance_km) : 0,
                 status: addFormRole.status,
                 recurring_end_date: isRecurring ? recurringEndDate : null,
-                tax_category: addFormRole.tax_category || 'bnc'
+                tax_category: addFormRole.tax_category || 'bnc',
+
+                product_ref: addFormEcommerce.product_ref,
+                unit_price: addFormEcommerce.unit_price ? parseFloat(addFormEcommerce.unit_price) : 0,
+                quantity: addFormEcommerce.quantity ? parseInt(addFormEcommerce.quantity) : 1,
+                unit_cost: addFormEcommerce.unit_cost ? parseFloat(addFormEcommerce.unit_cost) : 0,
+                shipping_fees: addFormEcommerce.shipping_fees ? parseFloat(addFormEcommerce.shipping_fees) : 0,
+                transaction_fees: addFormEcommerce.transaction_fees ? parseFloat(addFormEcommerce.transaction_fees) : 0
             });
             setIsCrossingModalOpen(true);
             return;
         }
 
+
+        // ... validation ...
+        if (editingId) {
+            await updateIncome(editingId, {
+                name: desc,
+                amount: amountValue,
+                date,
+                platformId,
+                is_recurring: isRecurring, // Keep existing logic
+                tjm: tjm ? parseFloat(tjm) : null,
+                vat_rate: parseFloat(vatRate),
+                // ... e-commerce fields ...
+                product_ref: addFormEcommerce.product_ref,
+                unit_price: addFormEcommerce.unit_price ? parseFloat(addFormEcommerce.unit_price) : 0,
+                quantity: addFormEcommerce.quantity ? parseInt(addFormEcommerce.quantity) : 1,
+                unit_cost: addFormEcommerce.unit_cost ? parseFloat(addFormEcommerce.unit_cost) : 0,
+                shipping_fees: addFormEcommerce.shipping_fees ? parseFloat(addFormEcommerce.shipping_fees) : 0,
+                transaction_fees: addFormEcommerce.transaction_fees ? parseFloat(addFormEcommerce.transaction_fees) : 0,
+                // ... other fields ...
+                ...addFormRole,
+                // Role specific fields
+                material_cost: addFormRole.material_cost ? parseFloat(addFormRole.material_cost) : 0,
+                hours_spent: addFormRole.hours_spent ? parseFloat(addFormRole.hours_spent) : 0,
+                channel_source: addFormRole.channel_source,
+                income_type: addFormRole.income_type,
+                invoice_date: addFormRole.invoice_date,
+                distance_km: addFormRole.distance_km ? parseFloat(addFormRole.distance_km) : 0,
+                status: addFormRole.status,
+                recurring_end_date: isRecurring ? recurringEndDate : null,
+                tax_category: addFormRole.tax_category || 'bnc'
+            });
+            setEditingId(null);
+            resetForm();
+            return;
+        }
+
+        // Add Logic
         addIncome({
             name: desc.trim(),
             amount: amountValue,
@@ -340,7 +429,15 @@ export default function IncomeTable(props) {
             distance_km: addFormRole.distance_km ? parseFloat(addFormRole.distance_km) : 0,
             status: addFormRole.status,
             recurring_end_date: isRecurring ? recurringEndDate : null,
-            tax_category: addFormRole.tax_category || 'bnc'
+            tax_category: addFormRole.tax_category || 'bnc',
+
+            // New E-commerce specific fields
+            product_ref: addFormEcommerce.product_ref,
+            unit_price: addFormEcommerce.unit_price ? parseFloat(addFormEcommerce.unit_price) : 0,
+            quantity: addFormEcommerce.quantity ? parseInt(addFormEcommerce.quantity) : 1,
+            unit_cost: addFormEcommerce.unit_cost ? parseFloat(addFormEcommerce.unit_cost) : 0,
+            shipping_fees: addFormEcommerce.shipping_fees ? parseFloat(addFormEcommerce.shipping_fees) : 0,
+            transaction_fees: addFormEcommerce.transaction_fees ? parseFloat(addFormEcommerce.transaction_fees) : 0
         });
         resetForm();
     };
@@ -375,7 +472,34 @@ export default function IncomeTable(props) {
 
     const startEdit = (inc) => {
         setEditingId(inc.id);
-        setEditForm({ ...inc });
+
+        if (isEcommerce) {
+            // Populate Main Form for E-commerce (Complex Edit)
+            setDesc(inc.name);
+            setAmount(inc.amount);
+            setDate(inc.date.split('T')[0]);
+            setPlatformId(inc.platformId);
+            setIsRecurring(!!inc.is_recurring);
+            setRecurringEndDate(inc.recurring_end_date || '');
+            setVatRate(inc.vat_rate || 0);
+
+            setAddFormEcommerce({
+                cogs: inc.cogs || '',
+                shipping_cost: inc.shipping_cost || '',
+                product_ref: inc.product_ref || '',
+                unit_price: inc.unit_price || '',
+                quantity: inc.quantity || '1',
+                unit_cost: inc.unit_cost || '',
+                shipping_fees: inc.shipping_fees || '',
+                transaction_fees: inc.transaction_fees || ''
+            });
+
+            // Scroll to form top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            // Standard Inline Edit
+            setEditForm({ ...inc });
+        }
     };
 
     const cancelEdit = () => {
@@ -476,9 +600,14 @@ export default function IncomeTable(props) {
             feeTotal: acc.feeTotal + feeTotal,
             feeVat: acc.feeVat + feeVat,
             urssaf: acc.urssaf + urssaf,
-            final: acc.final + final
+            final: acc.final + final,
+            // E-commerce totals
+            quantity: acc.quantity + (curr.quantity || 0),
+            shippingFees: acc.shippingFees + (curr.shipping_fees || 0),
+            transactionFees: acc.transactionFees + (curr.transaction_fees || 0),
+            // We don't sum unit prices or unit costs directly as it's meaningless
         };
-    }, { gross: 0, feeTotal: 0, feeVat: 0, urssaf: 0, final: 0 });
+    }, { gross: 0, feeTotal: 0, feeVat: 0, urssaf: 0, final: 0, quantity: 0, shippingFees: 0, transactionFees: 0 });
 
     // Calculate totals for the CURRENT YEAR regardless of selected filters
     const currentYear = new Date().getFullYear();
@@ -495,11 +624,15 @@ export default function IncomeTable(props) {
         return acc + curr.amount;
     }, 0);
 
-    const TVA_THRESHOLD = settings.tva_threshold || 36800;
+    const TVA_THRESHOLD = isEcommerce
+        ? (settings.tva_threshold_sell || 85000)
+        : (settings.tva_threshold || 37500);
     const tvaProgress = Math.min((currentYearTotals / TVA_THRESHOLD) * 100, 100);
     const tvaColor = tvaProgress >= 100 ? '#ef4444' : tvaProgress >= 80 ? '#f59e0b' : '#10b981';
 
-    const MICRO_THRESHOLD = settings.micro_threshold || 77700;
+    const MICRO_THRESHOLD = isEcommerce
+        ? (settings.micro_threshold_sell || 188700)
+        : (settings.micro_threshold || 77700);
     const microProgress = Math.min((currentYearTotals / MICRO_THRESHOLD) * 100, 100);
     const microColor = microProgress >= 100 ? '#ef4444' : microProgress >= 80 ? '#f59e0b' : '#3b82f6';
 
@@ -950,204 +1083,196 @@ export default function IncomeTable(props) {
                     Ajouter un revenu
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-5 mb-5">
-                    <div>
-                        <DatePicker
-                            label="Date"
-                            value={date}
-                            onChange={e => setDate(e.target.value)}
-                        />
-                    </div>
-                    <div>
-                        <label className="label text-slate-700">Client / Produit</label>
-                        <input
-                            placeholder="Description..."
-                            value={desc}
-                            onChange={e => {
-                                setDesc(e.target.value);
-                                if (errors.desc) setErrors({ ...errors, desc: false });
-                            }}
-                            className={`input bg-white text-slate-900 placeholder-slate-400 ${errors.desc ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-600'}`}
-                        />
-                        {errors.desc && <p className="text-red-500 text-xs mt-1">Requis</p>}
-                    </div>
-                    <div>
-                        <Select
-                            label="Plateforme"
-                            value={platformId}
-                            onChange={e => {
-                                const val = e.target.value;
-                                if (val === 'ADD_NEW') {
-                                    // Trigger navigation prop
-                                    if (props.onNavigateToConfig) props.onNavigateToConfig();
-                                    return;
-                                }
-                                setPlatformId(val);
-                                if (errors.platformId) setErrors({ ...errors, platformId: false });
-                            }}
-                            options={[
-                                ...platforms.map(p => ({ value: p.id, label: p.name })),
-                                { value: 'Autre', label: 'Autre' },
-                                { value: 'ADD_NEW', label: '+ Ajouter une plateforme...' }
-                            ]}
-                            error={errors.platformId}
-                        />
-                    </div>
-                    <div>
-                        <label className="label text-slate-700">Montant (€)</label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            value={amount}
-                            onChange={e => {
-                                setAmount(e.target.value);
-                                if (errors.amount) setErrors({ ...errors, amount: false });
-                            }}
-                            className={`input font-bold bg-white text-slate-900 ${errors.amount ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-600'}`}
-                            placeholder="0.00"
-                        />
-                        {errors.amount && <p className="text-red-500 text-xs mt-1">Requis</p>}
-
-
-                    </div>
-                    <div>
-                        <Select
-                            label="TVA (%)"
-                            value={vatRate}
-                            onChange={e => setVatRate(e.target.value)}
-                            options={[
-                                { value: '0', label: '0% (Pas de TVA)' },
-                                { value: '5.5', label: '5.5%' },
-                                { value: '10', label: '10%' },
-                                { value: '20', label: '20%' }
-                            ]}
-                        />
-                    </div>
-
-                    {/* Role Specific Inputs */}
-                    {user.role === 'artisan' && (
-                        <>
-                            <div>
-                                <label className="label text-slate-700">Coût Matière</label>
-                                <input
-                                    type="number" step="0.01"
-                                    value={addFormRole.material_cost}
-                                    onChange={e => setAddFormRole({ ...addFormRole, material_cost: e.target.value })}
-                                    className="input bg-white border-slate-600 text-slate-900" placeholder="0.00"
-                                />
-                            </div>
-                            <div>
-                                <label className="label text-slate-700">Heures</label>
-                                <input
-                                    type="number" step="0.5"
-                                    value={addFormRole.hours_spent}
-                                    onChange={e => setAddFormRole({ ...addFormRole, hours_spent: e.target.value })}
-                                    className="input bg-white border-slate-600 text-slate-900" placeholder="0 h"
-                                />
-                            </div>
-                        </>
-                    )}
-
-                    {user.role === 'creator' && (
-                        <>
-                            <div>
-                                <Select
-                                    label="Canal"
-                                    value={addFormRole.channel_source}
-                                    onChange={e => setAddFormRole({ ...addFormRole, channel_source: e.target.value })}
-                                    options={[
-                                        { value: 'Youtube', label: 'Youtube' },
-                                        { value: 'Twitch', label: 'Twitch' },
-                                        { value: 'Sponsor', label: 'Sponsor' },
-                                        { value: 'Affiliation', label: 'Affiliation' },
-                                        { value: 'Tipeee', label: 'Tipeee / Dons' },
-                                        { value: 'Coaching', label: 'Coaching' },
-                                        { value: 'Autre', label: 'Autre' }
-                                    ]}
-                                />
-                            </div>
-                            <div>
-                                <Select
-                                    label="Type"
-                                    value={addFormRole.income_type}
-                                    onChange={e => setAddFormRole({ ...addFormRole, income_type: e.target.value })}
-                                    options={[
-                                        { value: 'active', label: 'Actif' },
-                                        { value: 'passive', label: 'Passif' }
-                                    ]}
-                                />
-                            </div>
-                            <div>
-                                <label className="label text-slate-700">Date Fac.</label>
-                                <input
-                                    type="date"
-                                    value={addFormRole.invoice_date}
-                                    onChange={e => setAddFormRole({ ...addFormRole, invoice_date: e.target.value })}
-                                    className="input bg-white border-slate-600 text-slate-900"
-                                />
-                            </div>
-                        </>
-                    )}
-
-                    {user.role === 'field_service' && (
-                        <>
-                            <div>
-                                <Select
-                                    label="Statut"
-                                    value={addFormRole.status}
-                                    onChange={e => setAddFormRole({ ...addFormRole, status: e.target.value })}
-                                    options={[
-                                        { value: 'confirmed', label: 'Payé' },
-                                        { value: 'quote_sent', label: 'Devis Envoyé' },
-                                        { value: 'quote_signed', label: 'Devis Signé' }
-                                    ]}
-                                />
-                            </div>
-                            <div>
-                                <label className="label text-slate-700">Distance (km)</label>
-                                <input
-                                    type="number" step="1"
-                                    value={addFormRole.distance_km}
-                                    onChange={e => setAddFormRole({ ...addFormRole, distance_km: e.target.value })}
-                                    className="input bg-white border-slate-600 text-slate-900" placeholder="0 km"
-                                />
-                            </div>
-                        </>
-                    )}
-
                     {isEcommerce && (
                         <>
-                            <div>
-                                <label className="label text-slate-700">Coût Achat</label>
-                                <input
-                                    type="number" step="0.01"
-                                    value={addFormEcommerce.cogs}
-                                    onChange={e => setAddFormEcommerce({ ...addFormEcommerce, cogs: e.target.value })}
-                                    className="input bg-white border-slate-600 text-slate-900" placeholder="COGS"
-                                />
+                            <div className="col-span-full mb-2">
+                                <h4 className="font-bold text-slate-800 border-b pb-2 mb-4">Section 1 : Infos de base</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                    <div>
+                                        <DatePicker
+                                            label="Date"
+                                            value={date}
+                                            onChange={e => setDate(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="label text-slate-700">Produit / Référence</label>
+                                        <input
+                                            placeholder="Ex: T-Shirt Rouge - REF001"
+                                            value={desc}
+                                            onChange={e => {
+                                                setDesc(e.target.value);
+                                                setAddFormEcommerce({ ...addFormEcommerce, product_ref: e.target.value });
+                                                if (errors.desc) setErrors({ ...errors, desc: false });
+                                            }}
+                                            className={`input bg-white text-slate-900 placeholder-slate-400 ${errors.desc ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-600'}`}
+                                        />
+                                        {errors.desc && <p className="text-red-500 text-xs mt-1">Requis</p>}
+                                    </div>
+                                    <div>
+                                        <Select
+                                            label="Plateforme"
+                                            value={platformId}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                if (val === 'ADD_NEW') {
+                                                    if (props.onNavigateToConfig) props.onNavigateToConfig();
+                                                    return;
+                                                }
+                                                setPlatformId(val);
+                                                if (errors.platformId) setErrors({ ...errors, platformId: false });
+                                            }}
+                                            options={[
+                                                ...platforms.map(p => ({ value: p.id, label: p.name })),
+                                                { value: 'Autre', label: 'Autre' },
+                                                { value: 'ADD_NEW', label: '+ Ajouter une plateforme...' }
+                                            ]}
+                                            error={errors.platformId}
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label className="label text-slate-700">Livraison</label>
-                                <input
-                                    type="number" step="0.01"
-                                    value={addFormEcommerce.shipping_cost}
-                                    onChange={e => setAddFormEcommerce({ ...addFormEcommerce, shipping_cost: e.target.value })}
-                                    className="input bg-white border-slate-600 text-slate-900" placeholder="Frais"
-                                />
+
+                            <div className="col-span-full">
+                                <h4 className="font-bold text-slate-800 border-b pb-2 mb-4 mt-2">Section 2 : Le calcul de la Marge</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-5">
+                                    <div>
+                                        <label className="label text-slate-700">Prix de vente Unitaire (TTC)</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number" step="0.01"
+                                                value={addFormEcommerce.unit_price}
+                                                onChange={e => setAddFormEcommerce({ ...addFormEcommerce, unit_price: e.target.value })}
+                                                className="input bg-white border-slate-600 text-slate-900 pr-8" placeholder="0.00"
+                                            />
+                                            <span className="absolute right-3 top-2.5 text-slate-400">€</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <Select
+                                            label="TVA (%)"
+                                            value={vatRate}
+                                            onChange={e => setVatRate(e.target.value)}
+                                            options={[
+                                                { value: '0', label: '0% (Pas de TVA)' },
+                                                { value: '5.5', label: '5.5%' },
+                                                { value: '10', label: '10%' },
+                                                { value: '20', label: '20%' }
+                                            ]}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="label text-slate-700">Quantité</label>
+                                        <input
+                                            type="number" step="1"
+                                            value={addFormEcommerce.quantity}
+                                            onChange={e => setAddFormEcommerce({ ...addFormEcommerce, quantity: e.target.value })}
+                                            className="input bg-white border-slate-600 text-slate-900" placeholder="1"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="label text-slate-700">Coût d'Achat (Unitaire)</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number" step="0.01"
+                                                value={addFormEcommerce.unit_cost}
+                                                onChange={e => setAddFormEcommerce({ ...addFormEcommerce, unit_cost: e.target.value })}
+                                                className="input bg-white border-slate-600 text-slate-900 pr-8" placeholder="0.00"
+                                            />
+                                            <span className="absolute right-3 top-2.5 text-slate-400">€</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="label text-slate-700">Frais d'envoi (Total)</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number" step="0.01"
+                                                value={addFormEcommerce.shipping_fees}
+                                                onChange={e => setAddFormEcommerce({ ...addFormEcommerce, shipping_fees: e.target.value })}
+                                                className="input bg-white border-slate-600 text-slate-900 pr-8" placeholder="0.00"
+                                            />
+                                            <span className="absolute right-3 top-2.5 text-slate-400">€</span>
+                                        </div>
+                                    </div>
+
+                                </div>
                             </div>
                         </>
                     )}
 
-                    {!isEcommerce && user.role !== 'artisan' && user.role !== 'creator' && user.role !== 'field_service' && (
-                        <div>
-                            <label className="label text-slate-700">TJM</label>
-                            <input
-                                type="number"
-                                step="1"
-                                value={tjm}
-                                onChange={e => setTjm(e.target.value)}
-                                className="input bg-white border-slate-600 text-slate-900" placeholder="Optionnel"
-                            />
-                        </div>
+                    {!isEcommerce && (
+                        <>
+                            <div>
+                                <DatePicker
+                                    label="Date"
+                                    value={date}
+                                    onChange={e => setDate(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="label text-slate-700">Client / Description</label>
+                                <input
+                                    placeholder="Description..."
+                                    value={desc}
+                                    onChange={e => {
+                                        setDesc(e.target.value);
+                                        if (errors.desc) setErrors({ ...errors, desc: false });
+                                    }}
+                                    className={`input bg-white text-slate-900 placeholder-slate-400 ${errors.desc ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-600'}`}
+                                />
+                                {errors.desc && <p className="text-red-500 text-xs mt-1">Requis</p>}
+                            </div>
+                            <div>
+                                <Select
+                                    label="Plateforme"
+                                    value={platformId}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        if (val === 'ADD_NEW') {
+                                            // Trigger navigation prop
+                                            if (props.onNavigateToConfig) props.onNavigateToConfig();
+                                            return;
+                                        }
+                                        setPlatformId(val);
+                                        if (errors.platformId) setErrors({ ...errors, platformId: false });
+                                    }}
+                                    options={[
+                                        ...platforms.map(p => ({ value: p.id, label: p.name })),
+                                        { value: 'Autre', label: 'Autre' },
+                                        { value: 'ADD_NEW', label: '+ Ajouter une plateforme...' }
+                                    ]}
+                                    error={errors.platformId}
+                                />
+                            </div>
+                            <div>
+                                <label className="label text-slate-700">Montant (€)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={amount}
+                                    onChange={e => {
+                                        setAmount(e.target.value);
+                                        if (errors.amount) setErrors({ ...errors, amount: false });
+                                    }}
+                                    className={`input font-bold bg-white text-slate-900 ${errors.amount ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-600'}`}
+                                    placeholder="0.00"
+                                />
+                                {errors.amount && <p className="text-red-500 text-xs mt-1">Requis</p>}
+                            </div>
+                            <div>
+                                <Select
+                                    label="TVA (%)"
+                                    value={vatRate}
+                                    onChange={e => setVatRate(e.target.value)}
+                                    options={[
+                                        { value: '0', label: '0% (Pas de TVA)' },
+                                        { value: '5.5', label: '5.5%' },
+                                        { value: '10', label: '10%' },
+                                        { value: '20', label: '20%' }
+                                    ]}
+                                />
+                            </div>
+                        </>
                     )}
 
 
@@ -1213,8 +1338,8 @@ export default function IncomeTable(props) {
 
                 <div className="flex justify-end items-center pt-2">
 
-                    <button type="submit" className="btn-primary shadow-md">
-                        Ajouter
+                    <button type="submit" className={`btn-primary shadow-md ${editingId ? 'bg-orange-600 hover:bg-orange-700' : ''}`}>
+                        {editingId ? 'Modifier' : 'Ajouter'}
                     </button>
                 </div>
             </form >
@@ -1260,11 +1385,19 @@ export default function IncomeTable(props) {
                                 vat: 'TVA',
                                 tjm: 'TJM',
                                 fee: 'Frais (TTC)',
-                                deductibleVat: 'TVA Déd.',
+                                deduction: 'Déduction', // If deduction exists
+                                // E-commerce columns
+                                quantity: 'Qté',
+                                unit_price: 'P.U.',
+                                shipping_fees: 'Frais Port',
+                                transaction_fees: 'Frais Trans.',
+                                unit_cost: 'Achat',
+                                // End E-commerce
                                 urssaf: 'URSSAF',
                                 net: 'Net Final'
                             }).map(([key, label]) => {
-                                if (key === 'tjm' && isEcommerce) return null; // Logic for TJM
+                                if (key === 'tjm' && isEcommerce) return null;
+                                if (['quantity', 'unit_price', 'shipping_fees', 'transaction_fees', 'unit_cost'].includes(key) && !isEcommerce) return null;
                                 return (
                                     <label key={key} className="flex items-center gap-2 px-2 py-1.5 hover:bg-indigo-50 rounded cursor-pointer transition-colors">
                                         <input
@@ -1289,6 +1422,12 @@ export default function IncomeTable(props) {
                             {visibleColumns.date && <th className="px-4 py-4 font-bold text-slate-700">Date</th>}
                             {visibleColumns.name && <th className="px-4 py-4 font-bold text-slate-700">Nom</th>}
                             {visibleColumns.platform && <th className="px-4 py-4 font-bold text-slate-700">Plateforme</th>}
+                            {visibleColumns.quantity && isEcommerce && <th className="px-4 py-4 font-bold text-slate-700 text-center">Qté</th>}
+                            {visibleColumns.unit_price && isEcommerce && <th className="px-4 py-4 font-bold text-slate-700 text-right">P.U.</th>}
+                            {visibleColumns.shipping_fees && isEcommerce && <th className="px-4 py-4 font-bold text-slate-700 text-right">Frais Port</th>}
+                            {visibleColumns.transaction_fees && isEcommerce && <th className="px-4 py-4 font-bold text-slate-700 text-right">Frais Trans.</th>}
+                            {visibleColumns.unit_cost && isEcommerce && <th className="px-4 py-4 font-bold text-slate-700 text-right">Achat</th>}
+
                             {visibleColumns.amount && <th className="px-4 py-4 font-bold text-slate-700 text-right">Montant HT</th>}
                             {visibleColumns.vat && <th className="px-4 py-4 font-bold text-slate-700 text-right">TVA</th>}
                             {!isEcommerce && visibleColumns.tjm && <th className="px-4 py-4 font-bold text-slate-700 text-right">TJM</th>}
@@ -1305,7 +1444,8 @@ export default function IncomeTable(props) {
                                 ? new Date(b.date) - new Date(a.date)
                                 : new Date(a.date) - new Date(b.date);
                         }).slice(0, visibleLimit).map(inc => {
-                            const isEditing = editingId === inc.id;
+                            // For E-commerce, we use main form editing, so we don't switch row to input mode
+                            const isEditing = editingId === inc.id && !isEcommerce;
                             const { p, gross, feeTotal, feeVat, urssaf, final } = calculate(isEditing ? { ...editForm, platformId: editForm.platformId || inc.platformId } : inc);
 
                             if (isEditing) {
@@ -1402,6 +1542,12 @@ export default function IncomeTable(props) {
                                             {p ? p.name : 'Autre'}
                                         </span>
                                     </td>}
+                                    {visibleColumns.quantity && isEcommerce && <td className="px-4 py-3 text-center">{inc.quantity || '-'}</td>}
+                                    {visibleColumns.unit_price && isEcommerce && <td className="px-4 py-3 text-right text-slate-700">{inc.unit_price ? inc.unit_price.toFixed(2) + '€' : '-'}</td>}
+                                    {visibleColumns.shipping_fees && isEcommerce && <td className="px-4 py-3 text-right text-slate-600">{inc.shipping_fees ? inc.shipping_fees.toFixed(2) + '€' : '-'}</td>}
+                                    {visibleColumns.transaction_fees && isEcommerce && <td className="px-4 py-3 text-right text-red-500 font-medium">-{inc.transaction_fees ? inc.transaction_fees.toFixed(2) + '€' : '-'}</td>}
+                                    {visibleColumns.unit_cost && isEcommerce && <td className="px-4 py-3 text-right text-slate-400 italic">{inc.unit_cost ? inc.unit_cost.toFixed(2) + '€' : '-'}</td>}
+
                                     {visibleColumns.amount && <td className="px-4 py-3 text-right font-bold text-slate-700">{inc.amount.toFixed(2)}€</td>}
                                     {visibleColumns.vat && <td className="px-4 py-3 text-right text-xs text-slate-500 font-medium">
                                         {inc.vat_amount ? `+${inc.vat_amount.toFixed(2)}€` : '-'}
@@ -1435,7 +1581,7 @@ export default function IncomeTable(props) {
                         })}
                         {filteredIncomes.length === 0 && (
                             <tr>
-                                <td colSpan={10} className="px-4 py-12 text-center text-slate-500 font-medium italic">
+                                <td colSpan="20" className="px-4 py-12 text-center text-slate-500 font-medium italic">
                                     Aucun revenu pour cette période
                                 </td>
                             </tr>
@@ -1447,6 +1593,12 @@ export default function IncomeTable(props) {
                                 {(visibleColumns.date || visibleColumns.name || visibleColumns.platform) && (
                                     <td colSpan={(visibleColumns.date ? 1 : 0) + (visibleColumns.name ? 1 : 0) + (visibleColumns.platform ? 1 : 0)} className="px-4 py-4 text-right text-slate-900 uppercase text-sm tracking-widest font-black">Totaux</td>
                                 )}
+                                {visibleColumns.quantity && isEcommerce && <td className="px-4 py-4 text-center text-slate-700">{totals.quantity}</td>}
+                                {visibleColumns.unit_price && isEcommerce && <td></td>}
+                                {visibleColumns.shipping_fees && isEcommerce && <td className="px-4 py-4 text-right text-slate-600">{totals.shippingFees.toFixed(2)}€</td>}
+                                {visibleColumns.transaction_fees && isEcommerce && <td className="px-4 py-4 text-right text-red-500">-{totals.transactionFees.toFixed(2)}€</td>}
+                                {visibleColumns.unit_cost && isEcommerce && <td></td>}
+
                                 {visibleColumns.amount && <td className="px-4 py-4 text-right">{totals.gross.toFixed(2)}€</td>}
                                 {visibleColumns.vat && <td className="px-4 py-4 text-right text-slate-500 text-xs"></td>}
                                 {!isEcommerce && visibleColumns.tjm && <td></td>}
@@ -1462,28 +1614,30 @@ export default function IncomeTable(props) {
             </div>
 
             {/* Pagination Controls */}
-            {filteredIncomes.length > 10 && (
-                <div className="flex justify-center mt-4">
-                    {visibleLimit < filteredIncomes.length ? (
-                        <button
-                            onClick={() => setVisibleLimit(prev => prev + 10)}
-                            className="px-6 py-2 bg-white border border-slate-300 text-slate-700 font-bold rounded-full shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2"
-                        >
-                            <span>Voir plus</span>
-                            <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-500">
-                                {Math.min(filteredIncomes.length - visibleLimit, 10)} restants
-                            </span>
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => setVisibleLimit(10)}
-                            className="px-6 py-2 bg-slate-100 text-slate-600 font-bold rounded-full hover:bg-slate-200 transition-colors"
-                        >
-                            Réduire la liste
-                        </button>
-                    )}
-                </div>
-            )}
+            {
+                filteredIncomes.length > 10 && (
+                    <div className="flex justify-center mt-4">
+                        {visibleLimit < filteredIncomes.length ? (
+                            <button
+                                onClick={() => setVisibleLimit(prev => prev + 10)}
+                                className="px-6 py-2 bg-white border border-slate-300 text-slate-700 font-bold rounded-full shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2"
+                            >
+                                <span>Voir plus</span>
+                                <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-500">
+                                    {Math.min(filteredIncomes.length - visibleLimit, 10)} restants
+                                </span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => setVisibleLimit(10)}
+                                className="px-6 py-2 bg-slate-100 text-slate-600 font-bold rounded-full hover:bg-slate-200 transition-colors"
+                            >
+                                Réduire la liste
+                            </button>
+                        )}
+                    </div>
+                )
+            }
 
             {/* Jauges Seuils */}
             <div className="grid gap-6 mb-8 mt-8">
@@ -1576,6 +1730,6 @@ export default function IncomeTable(props) {
                 onConfirm={confirmDelete}
                 message="Êtes-vous sûr de vouloir supprimer ce revenu ?"
             />
-        </div>
+        </div >
     );
 }

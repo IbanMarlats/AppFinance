@@ -14,9 +14,11 @@ export function AuthProvider({ children }) {
         checkUser();
     }, []);
 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
     const checkUser = async () => {
         try {
-            const res = await axios.get('http://localhost:3001/api/auth/me');
+            const res = await axios.get(`${API_URL}/auth/me`);
             setUser(res.data);
         } catch (err) {
             setUser(null);
@@ -26,19 +28,19 @@ export function AuthProvider({ children }) {
     };
 
     const login = async (email, password) => {
-        const res = await axios.post('http://localhost:3001/api/auth/login', { email, password });
+        const res = await axios.post(`${API_URL}/auth/login`, { email, password });
         setUser(res.data.user);
         return res.data;
     };
 
     const register = async (email, password, role, newsletter, declaration_frequency) => {
-        const res = await axios.post('http://localhost:3001/api/auth/register', { email, password, role, newsletter, declaration_frequency });
+        const res = await axios.post(`${API_URL}/auth/register`, { email, password, role, newsletter, declaration_frequency });
         setUser(res.data.user);
         return res.data;
     };
 
     const logout = async () => {
-        await axios.post('http://localhost:3001/api/auth/logout');
+        await axios.post(`${API_URL}/auth/logout`);
         setUser(null);
     };
 

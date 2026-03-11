@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const FinanceContext = createContext();
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export const FinanceProvider = ({ children }) => {
     const [incomes, setIncomes] = useState([]);

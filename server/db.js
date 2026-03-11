@@ -123,6 +123,14 @@ db.serialize(() => {
   // Tax Category (BNC / BIC)
   addColumnIfNotExists(db, 'incomes', 'tax_category', "TEXT DEFAULT 'bnc'");
 
+  // New E-commerce Fields
+  addColumnIfNotExists(db, 'incomes', 'product_ref', 'TEXT');
+  addColumnIfNotExists(db, 'incomes', 'unit_price', 'REAL DEFAULT 0');
+  addColumnIfNotExists(db, 'incomes', 'quantity', 'INTEGER DEFAULT 1');
+  addColumnIfNotExists(db, 'incomes', 'unit_cost', 'REAL DEFAULT 0'); // Buying Price
+  addColumnIfNotExists(db, 'incomes', 'shipping_fees', 'REAL DEFAULT 0'); // Shipping charged to customer
+  addColumnIfNotExists(db, 'incomes', 'transaction_fees', 'REAL DEFAULT 0'); // Platform fees
+
   // Expenses
   db.run(`CREATE TABLE IF NOT EXISTS expenses (
     id TEXT PRIMARY KEY,
