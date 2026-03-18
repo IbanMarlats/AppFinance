@@ -469,7 +469,7 @@ router.post('/newsletter/send', async (req, res) => {
             try {
                 const email = decrypt(row.email_encrypted);
                 const mailOptions = {
-                    from: process.env.SMTP_FROM || '"Finance App" <noreply@financeapp.local>',
+                    from: process.env.SMTP_FROM || '"Fiskeo" <noreply@fiskeo.fr>',
                     to: email,
                     subject: subject,
                     html: `<div style="font-family: sans-serif; padding: 20px; color: #334155;">
@@ -479,7 +479,7 @@ router.post('/newsletter/send', async (req, res) => {
                         </div>
                         <hr style="margin: 32px 0; border: none; border-top: 1px solid #e2e8f0;"/>
                         <p style="font-size: 0.8em; color: #94a3b8; text-align: center;">
-                            Vous recevez cet email car vous êtes inscrit à notre newsletter via l'application Finance.
+                            Vous recevez cet email car vous êtes inscrit à notre newsletter via l'application Fiskeo.
                         </p>
                     </div>`
                 };

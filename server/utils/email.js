@@ -5,7 +5,7 @@ dotenv.config(); // Ensure env vars are loaded
 let transporter;
 const PORT = process.env.PORT || 3001;
 // Frontend URL is usually on 5173 for Vite dev
-const CLIENT_URL = 'http://localhost:5173';
+const CLIENT_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 export async function createTransporter() {
     if (!transporter) {
@@ -55,7 +55,7 @@ export async function sendVerificationEmail(email, token) {
 
     const link = `http://localhost:${PORT}/api/auth/verify/${token}`;
     const mailOptions = {
-        from: process.env.SMTP_FROM || '"Finance App" <noreply@financeapp.local>',
+        from: process.env.SMTP_FROM || '"Fiskeo" <noreply@fiskeo.fr>',
         to: email,
         subject: "Vérifiez votre email",
         html: `<h1>Bienvenue !</h1><p>Merci de confirmer votre inscription en cliquant sur ce lien :</p><a href="${link}">${link}</a>`,
@@ -84,7 +84,7 @@ export async function sendPasswordResetEmail(email, token) {
 
     const link = `${CLIENT_URL}/reset-password?token=${token}`;
     const mailOptions = {
-        from: process.env.SMTP_FROM || '"Finance App" <noreply@financeapp.local>',
+        from: process.env.SMTP_FROM || '"Fiskeo" <noreply@fiskeo.fr>',
         to: email,
         subject: "Réinitialisation de votre mot de passe",
         html: `
@@ -119,7 +119,7 @@ export async function sendSuggestionEmail(userEmail, suggestionText) {
     if (!transporter) await createTransporter();
 
     const mailOptions = {
-        from: process.env.SMTP_FROM || '"Finance App" <noreply@financeapp.local>',
+        from: process.env.SMTP_FROM || '"Fiskeo" <noreply@fiskeo.fr>',
         to: 'iban.marlats@gmail.com',
         replyTo: userEmail,
         subject: "défi suggestion de tableau",
@@ -160,7 +160,7 @@ export async function sendEmail(to, subject, html) {
     if (!transporter) await createTransporter();
 
     const mailOptions = {
-        from: process.env.SMTP_FROM || '"Finance App" <noreply@financeapp.local>',
+        from: process.env.SMTP_FROM || '"Fiskeo" <noreply@fiskeo.fr>',
         to: to,
         subject: subject,
         html: html,

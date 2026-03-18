@@ -1,5 +1,5 @@
 {
-  "name": "finance-app-server",
+  "name": "fiskeo-server",
   "private": true,
   "type": "module",
   "dependencies": {
