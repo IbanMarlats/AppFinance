@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useFinance } from '../../context/FinanceContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, API_URL } from '../../context/AuthContext';
 import { Search, Filter, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
 import RevenueChart from '../dashboard/charts/RevenueChart';
 import RichTextEditor from './RichTextEditor';
@@ -46,7 +46,7 @@ export default function AdminDashboard() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await axios.get('http://localhost:3001/api/admin/stats');
+                const res = await axios.get(`${API_URL}/admin/stats`);
                 setStats(res.data);
             } catch (err) {
                 console.error('Error fetching admin stats:', err);
@@ -61,7 +61,7 @@ export default function AdminDashboard() {
     const fetchUsers = async () => {
         setUserLoading(true);
         try {
-            const res = await axios.post('http://localhost:3001/api/admin/users', {
+            const res = await axios.post(`${API_URL}/admin/users`, {
                 page,
                 limit: 10,
                 search: searchQuery,
@@ -106,12 +106,12 @@ export default function AdminDashboard() {
     const handleSubscriptionChange = async (userId, type) => {
         if (!confirm(`Passer cet utilisateur en ${type} ?`)) return;
         try {
-            await axios.put(`http://localhost:3001/api/admin/user/${userId}/subscription`, { type });
+            await axios.put(`${API_URL}/admin/user/${userId}/subscription`, { type });
 
             // Refresh users and stats
             fetchUsers();
 
-            const res = await axios.get('http://localhost:3001/api/admin/stats');
+            const res = await axios.get(`${API_URL}/admin/stats`);
             setStats(res.data);
             alert('Abonnement mis à jour !');
         } catch (err) {
@@ -124,7 +124,7 @@ export default function AdminDashboard() {
         setNewsletterSending(true);
         setNewsletterStatus({ type: 'info', msg: 'Envoi en cours...' });
         try {
-            const res = await axios.post('http://localhost:3001/api/admin/newsletter/send', {
+            const res = await axios.post(`${API_URL}/admin/newsletter/send`, {
                 subject: newsletterSubject,
                 message: newsletterMessage
             });

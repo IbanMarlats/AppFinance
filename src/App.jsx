@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FinanceProvider } from './context/FinanceContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth, API_URL } from './context/AuthContext';
 import IncomeTable from './components/finance/IncomeTable';
 import ExpenseTable from './components/finance/ExpenseTable';
 import CategoryManager from './components/settings/CategoryManager';
@@ -71,7 +71,7 @@ function FinanceApp() {
       localStorage.setItem('visitor_id', visitorId);
     }
     try {
-      await axios.post('http://localhost:3001/api/analytics/visit', { visitor_id: visitorId });
+      await axios.post(`${API_URL}/analytics/visit`, { visitor_id: visitorId });
     } catch (err) {
       console.error("Analytics error:", err);
     }

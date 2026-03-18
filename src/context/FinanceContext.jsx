@@ -1,9 +1,9 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
-const FinanceContext = createContext();
+import { useAuth, API_URL } from './AuthContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const FinanceContext = createContext();
 
 export const FinanceProvider = ({ children }) => {
     const [incomes, setIncomes] = useState([]);

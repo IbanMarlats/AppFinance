@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth, API_URL } from '../../context/AuthContext';
 
 export default function AdminLogs() {
     const [logs, setLogs] = useState([]);
@@ -9,7 +10,7 @@ export default function AdminLogs() {
     const fetchLogs = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:3001/api/admin/logs', { withCredentials: true });
+            const res = await axios.get(`${API_URL}/admin/logs`, { withCredentials: true });
             setLogs(res.data);
             setError('');
         } catch (err) {

@@ -21,24 +21,18 @@ export default function SettingsManager() {
     useEffect(() => {
         const load = async () => {
             try {
-                // Initial fetch
-                const res = await fetch('http://localhost:3001/api/settings', {
-                    credentials: 'include'
+                const res = await axios.get(`${API_URL}/settings`, { withCredentials: true });
+                const data = res.data;
+                setSettings({
+                    tva_threshold: data.tva_threshold || '',
+                    tva_threshold_sell: data.tva_threshold_sell || '',
+                    micro_threshold: data.micro_threshold || '',
+                    micro_threshold_sell: data.micro_threshold_sell || '',
+                    urssaf_freelance: data.urssaf_freelance || '',
+                    urssaf_freelance_bnc: data.urssaf_freelance_bnc || '',
+                    urssaf_freelance_bic: data.urssaf_freelance_bic || '',
+                    urssaf_ecommerce: data.urssaf_ecommerce || ''
                 });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    setSettings({
-                        tva_threshold: data.tva_threshold || '',
-                        tva_threshold_sell: data.tva_threshold_sell || '',
-                        micro_threshold: data.micro_threshold || '',
-                        micro_threshold_sell: data.micro_threshold_sell || '',
-                        urssaf_freelance: data.urssaf_freelance || '',
-                        urssaf_freelance_bnc: data.urssaf_freelance_bnc || '',
-                        urssaf_freelance_bic: data.urssaf_freelance_bic || '',
-                        urssaf_ecommerce: data.urssaf_ecommerce || ''
-                    });
-                }
             } catch (err) {
                 console.error("Failed to load settings", err);
             } finally {
@@ -54,22 +48,12 @@ export default function SettingsManager() {
         setMessage('');
 
         try {
-            const res = await fetch('http://localhost:3001/api/settings', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify(settings)
-            });
-
-            if (res.ok) {
-                setMessage('Paramètres sauvegardés avec succès !');
-                setTimeout(() => setMessage(''), 3000);
-            } else {
-                setMessage('Erreur lors de la sauvegarde');
-            }
+            await axios.put(`${API_URL}/settings`, settings, { withCredentials: true });
+            setMessage('Paramètres sauvegardés avec succès !');
+            setTimeout(() => setMessage(''), 3000);
         } catch (err) {
             console.error(err);
-            setMessage('Erreur réseau');
+            setMessage('Erreur lors de la sauvegarde');
         } finally {
             setSaving(false);
         }

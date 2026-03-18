@@ -46,7 +46,14 @@ initSubscriptionCron();
 
 // --- MIDDLEWARE ---
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(' ') : ['http://localhost:5173'];
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 app.use(express.json());

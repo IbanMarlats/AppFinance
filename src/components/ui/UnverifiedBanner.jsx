@@ -13,7 +13,7 @@ export default function UnverifiedBanner() {
         setSending(true);
         setMessage('');
         try {
-            await axios.post('http://localhost:3001/api/auth/resend-verification', { email: user.email });
+            await axios.post(`${API_URL}/api/auth/resend-verification`, {}, { withCredentials: true });
             setMessage('Email envoyé !');
         } catch (err) {
             setMessage('Erreur lors de l\'envoi');

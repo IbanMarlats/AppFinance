@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useFinance } from '../../context/FinanceContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, API_URL } from '../../context/AuthContext';
 import { SlidersHorizontal, Lightbulb, X, Send, Crown, Lock } from 'lucide-react';
 import { hexToRgba } from '../ui/ColorPicker';
 import PremiumSubscriptionBlock from '../ui/PremiumSubscriptionBlock';
@@ -66,7 +66,7 @@ export default function StatsDashboard() {
     useEffect(() => {
         const fetchGoals = async () => {
             try {
-                const res = await axios.get('http://localhost:3001/api/goals', { withCredentials: true });
+                const res = await axios.get(`${API_URL}/goals`, { withCredentials: true });
                 setGoals(res.data);
             } catch (err) {
                 console.error("Error fetching goals for stats:", err);
@@ -85,7 +85,7 @@ export default function StatsDashboard() {
         if (!suggestionText.trim()) return;
         setSuggestionSending(true);
         try {
-            await axios.post('http://localhost:3001/api/contact/suggest', {
+            await axios.post(`${API_URL}/contact/suggest`, {
                 suggestion: suggestionText
             }, { withCredentials: true });
 
@@ -110,7 +110,7 @@ export default function StatsDashboard() {
 
         // Save to DB
         try {
-            await axios.put('http://localhost:3001/api/settings', {
+            await axios.put(`${API_URL}/settings`, {
                 stats_preferences: JSON.stringify(newState)
             }, { withCredentials: true });
 

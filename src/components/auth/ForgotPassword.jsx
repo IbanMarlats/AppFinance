@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, API_URL } from '../../context/AuthContext';
 
 export default function ResetPassword({ onDone }) {
     const [email, setEmail] = useState('');
@@ -31,7 +31,7 @@ export default function ResetPassword({ onDone }) {
         setLoading(true);
 
         try {
-            const res = await axios.post('http://localhost:3001/api/auth/request-password-reset', { email });
+            const res = await axios.post(`${API_URL}/auth/request-password-reset`, { email });
             setMessage(res.data.message);
         } catch (err) {
             // Generic error to avoid enumeration if security desired, or specific if internal app
@@ -52,7 +52,7 @@ export default function ResetPassword({ onDone }) {
         setLoading(true);
 
         try {
-            await axios.post('http://localhost:3001/api/auth/reset-password', { token, newPassword });
+            await axios.post(`${API_URL}/auth/reset-password`, { token, newPassword });
             setMessage("Mot de passe modifié avec succès ! Vous pouvez vous connecter.");
             setTimeout(() => {
                 onDone(); // Switch back to login

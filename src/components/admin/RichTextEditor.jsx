@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bold, Italic, List, Heading1, Heading2, Link, Undo, Redo, RemoveFormatting, Image } from 'lucide-react';
+import { useAuth, API_URL } from '../../context/AuthContext';
 
 export default function RichTextEditor({ value, onChange, placeholder }) {
     const editorRef = useRef(null);
@@ -51,7 +52,7 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
             // PROPOSAL: Simple fetch with token from localStorage 'token' (common).
             // We use httpOnly cookies for auth, so we don't need to manually attach a token.
             // We just need to ensure credentials (cookies) are sent with the request.
-            const res = await fetch('http://localhost:3001/api/upload', {
+            const res = await fetch(`${API_URL}/upload`, {
                 method: 'POST',
                 credentials: 'include',
                 body: formData

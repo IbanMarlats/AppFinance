@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useState, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, API_URL } from '../../context/AuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -159,7 +159,7 @@ export default function IncomeTable(props) {
 
     const activateVat = async (mode = 'HT') => {
         try {
-            await axios.put('http://localhost:3001/api/auth/me', {
+            await axios.put(`${API_URL}/auth/me`, {
                 is_subject_vat: true,
                 vat_start_date: new Date().toISOString().split('T')[0]
             });
@@ -254,7 +254,7 @@ export default function IncomeTable(props) {
 
     const deactivateVat = async () => {
         try {
-            await axios.put('http://localhost:3001/api/auth/me', {
+            await axios.put(`${API_URL}/auth/me`, {
                 is_subject_vat: false,
                 vat_start_date: null
             });

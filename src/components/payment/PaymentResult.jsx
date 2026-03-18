@@ -22,7 +22,7 @@ export default function PaymentResult() {
             const verify = async () => {
                 try {
                     console.log("Verifying session...", sessionId);
-                    await axios.get(`http://localhost:3001/api/stripe/verify-session?session_id=${sessionId}`, { withCredentials: true });
+                    await axios.get(`${API_URL}/stripe/verify-session?session_id=${sessionId}`, { withCredentials: true });
                     console.log("Session verified.");
                 } catch (err) {
                     console.error("Verification failed", err);

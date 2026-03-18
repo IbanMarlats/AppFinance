@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Calendar, ChevronRight, Lock, TrendingUp } from 'lucide-react';
+import { useAuth, API_URL } from '../../context/AuthContext';
+import { Calendar, Download, RefreshCw, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Wallet, Receipt } from 'lucide-react';
 import RecapView from './RecapView';
 import YearlyRecapView from './YearlyRecapView';
 import PremiumSubscriptionBlock from '../ui/PremiumSubscriptionBlock';
-import { useAuth } from '../../context/AuthContext';
 import { useSearchParams } from 'react-router-dom';
 
 export default function RecapDashboard() {
@@ -33,7 +33,7 @@ export default function RecapDashboard() {
 
     const fetchRecaps = async () => {
         try {
-            const res = await axios.get('http://localhost:3001/api/recaps');
+            const res = await axios.get(`${API_URL}/recaps`);
             setRecaps(res.data);
         } catch (err) {
             console.error("Failed to fetch recaps", err);
@@ -44,7 +44,7 @@ export default function RecapDashboard() {
 
     const fetchYearlyRecaps = async () => {
         try {
-            const res = await axios.get('http://localhost:3001/api/recaps/annual');
+            const res = await axios.get(`${API_URL}/recaps/annual`);
             setYearlyRecaps(res.data);
         } catch (err) {
             console.error("Failed to fetch yearly recaps", err);

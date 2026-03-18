@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, API_URL } from '../../context/AuthContext';
 import axios from 'axios';
 import { Mail, Calendar, CreditCard, Shield, User, ExternalLink, Crown } from 'lucide-react';
 import PremiumSubscriptionBlock from '../ui/PremiumSubscriptionBlock';
@@ -23,7 +23,7 @@ export default function UserProfile() {
     const handleManageSubscription = async () => {
         setLoading('manage');
         try {
-            const res = await axios.post('http://localhost:3001/api/stripe/create-portal-session', {}, { withCredentials: true });
+            const res = await axios.post(`${API_URL}/stripe/create-portal-session`, {}, { withCredentials: true });
             if (res.data.url) {
                 window.location.href = res.data.url;
             }
@@ -87,7 +87,7 @@ export default function UserProfile() {
 
                                             setLoading('role');
                                             try {
-                                                await axios.put('http://localhost:3001/api/auth/me', { role: newRole }, { withCredentials: true });
+                                                await axios.put(`${API_URL}/auth/me`, { role: newRole }, { withCredentials: true });
                                                 window.location.reload(); // Simple reload to refresh all context/UI
                                             } catch (err) {
                                                 console.error(err);
@@ -135,7 +135,7 @@ export default function UserProfile() {
 
                                             setLoading('freq');
                                             try {
-                                                await axios.put('http://localhost:3001/api/auth/me', { declaration_frequency: newFreq }, { withCredentials: true });
+                                                await axios.put(`${API_URL}/auth/me`, { declaration_frequency: newFreq }, { withCredentials: true });
                                                 window.location.reload();
                                             } catch (err) {
                                                 console.error(err);

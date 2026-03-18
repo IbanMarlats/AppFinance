@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Target, TrendingUp, AlertCircle, ChevronLeft, ChevronRight, Save, CheckCircle2, Lock, Calculator, ArrowDown } from 'lucide-react';
+import { Target, TrendingUp, AlertCircle, ChevronLeft, ChevronRight, Save, CheckCircle2, Lock, Calculator, ArrowDown, Calendar, Plus, Trash2, Edit2, Check, X } from 'lucide-react';
 import PremiumSubscriptionBlock from '../ui/PremiumSubscriptionBlock';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, API_URL } from '../../context/AuthContext';
 
 export default function GoalsDashboard() {
     const { user } = useAuth();
@@ -36,15 +36,15 @@ export default function GoalsDashboard() {
 
         try {
             // Fetch Goals
-            const goalsRes = await axios.get('http://localhost:3001/api/goals', { withCredentials: true });
+            const goalsRes = await axios.get(`${API_URL}/goals`, { withCredentials: true });
             setGoals(goalsRes.data);
 
             // Fetch Actual Data (Incomes & Expenses) for the year
             // Note: In a real app we might want a specific endpoint for 'yearly summary' to avoid heavy payload
             // Reusing existing valid endpoints
             const [incomesRes, expensesRes] = await Promise.all([
-                axios.get('http://localhost:3001/api/incomes', { withCredentials: true }),
-                axios.get('http://localhost:3001/api/expenses', { withCredentials: true })
+                axios.get(`${API_URL}/incomes`, { withCredentials: true }),
+                axios.get(`${API_URL}/expenses`, { withCredentials: true })
             ]);
 
             processStats(incomesRes.data, expensesRes.data);
@@ -107,7 +107,7 @@ export default function GoalsDashboard() {
     const saveGoal = async (type, period, amount, periodKey, saveId) => {
         setSaving(saveId);
         try {
-            await axios.post('http://localhost:3001/api/goals', {
+            await axios.post(`${API_URL}/goals`, {
                 type,
                 period,
                 target_amount: parseFloat(amount),
@@ -166,7 +166,7 @@ export default function GoalsDashboard() {
             newMonthlyGoals[`${mKey}-${type}`] = monthlyAmount;
 
             // Prepare API call
-            promises.push(axios.post('http://localhost:3001/api/goals', {
+            promises.push(axios.post(`${API_URL}/goals`, {
                 type,
                 period: 'month',
                 target_amount: parseFloat(monthlyAmount),
@@ -180,7 +180,7 @@ export default function GoalsDashboard() {
         try {
             await Promise.all(promises);
             // Refresh goals from server to be sure
-            const goalsRes = await axios.get('http://localhost:3001/api/goals', { withCredentials: true });
+            const goalsRes = await axios.get(`${API_URL}/goals`, { withCredentials: true });
             setGoals(goalsRes.data);
             setSaving(null);
         } catch (err) {
@@ -209,7 +209,7 @@ export default function GoalsDashboard() {
         setSaving(`sum-${type}`);
 
         try {
-            await axios.post('http://localhost:3001/api/goals', {
+            await axios.post(`${API_URL}/goals`, {
                 type,
                 period: 'year',
                 target_amount: total,
@@ -217,7 +217,7 @@ export default function GoalsDashboard() {
             }, { withCredentials: true });
 
             // Refresh goals
-            const goalsRes = await axios.get('http://localhost:3001/api/goals', { withCredentials: true });
+            const goalsRes = await axios.get(`${API_URL}/goals`, { withCredentials: true });
             setGoals(goalsRes.data);
             setSaving(null);
         } catch (err) {
@@ -278,22 +278,25 @@ export default function GoalsDashboard() {
                                 <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
                                     <TrendingUp size={24} />
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900">Objectif CA Annuel</h3>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-xs text-slate-500">Chiffre d'Affaires Cible</p>
-                                        {user.is_premium && (
-                                            <button
-                                                onClick={() => distributeAnnual('revenue')}
-                                                className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded hover:bg-slate-200 border border-slate-200 flex items-center gap-1"
-                                                title="Répartir ce montant sur les 12 mois"
-                                            >
-                                                <ArrowDown size={12} />
-                                                Répartir sur les mois
-                                            </button>
-                                        )}
+                                {
+                                    /* Correction lint: separate div from previous line */
+                                    <div>
+                                        <h3 className="font-bold text-gray-900">Objectif CA Annuel</h3>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-xs text-slate-500">Chiffre d'Affaires Cible</p>
+                                            {user.is_premium && (
+                                                <button
+                                                    onClick={() => distributeAnnual('revenue')}
+                                                    className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded hover:bg-slate-200 border border-slate-200 flex items-center gap-1"
+                                                    title="Répartir ce montant sur les 12 mois"
+                                                >
+                                                    <ArrowDown size={12} />
+                                                    Répartir sur les mois
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
+                                }
                             </div>
                             <div className="flex items-center gap-2 relative">
                                 <input
@@ -344,22 +347,25 @@ export default function GoalsDashboard() {
                                 <div className="p-2 bg-red-100 text-red-600 rounded-lg">
                                     <AlertCircle size={24} />
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900">Limite Dépenses</h3>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-xs text-slate-500">Budget Maximum Annuel</p>
-                                        {user.is_premium && (
-                                            <button
-                                                onClick={() => distributeAnnual('expense')}
-                                                className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded hover:bg-slate-200 border border-slate-200 flex items-center gap-1"
-                                                title="Répartir ce montant sur les 12 mois"
-                                            >
-                                                <ArrowDown size={12} />
-                                                Répartir sur les mois
-                                            </button>
-                                        )}
+                                {
+                                    /* Correction lint: separate div from previous line */
+                                    <div>
+                                        <h3 className="font-bold text-gray-900">Limite Dépenses</h3>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-xs text-slate-500">Budget Maximum Annuel</p>
+                                            {user.is_premium && (
+                                                <button
+                                                    onClick={() => distributeAnnual('expense')}
+                                                    className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded hover:bg-slate-200 border border-slate-200 flex items-center gap-1"
+                                                    title="Répartir ce montant sur les 12 mois"
+                                                >
+                                                    <ArrowDown size={12} />
+                                                    Répartir sur les mois
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
+                                }
                             </div>
                             <div className="flex items-center gap-2 relative">
                                 <input
@@ -531,8 +537,6 @@ export default function GoalsDashboard() {
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
         </div>
     );
 }

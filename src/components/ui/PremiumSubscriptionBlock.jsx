@@ -14,7 +14,7 @@ export default function PremiumSubscriptionBlock() {
 
             const mode = planType === 'monthly' ? 'subscription' : 'payment';
 
-            const res = await axios.post('http://localhost:3001/api/stripe/create-checkout-session', {
+            const res = await axios.post(`${API_URL}/stripe/create-checkout-session`, {
                 priceId,
                 mode
             }, { withCredentials: true });
