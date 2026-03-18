@@ -4,6 +4,11 @@ dotenv.config({ path: 'server/.env' });
 // Also try default (root) just in case they moved it
 dotenv.config();
 
+console.log("=== SERVER STARTING UP ===");
+console.log("Time:", new Date().toISOString());
+console.log("Working Directory:", process.cwd());
+console.log("Node version:", process.version);
+
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -95,6 +100,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Okay, I'll just put it here.
 
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+const HOST = process.env.IP || '::';
+
+app.listen(PORT, HOST, () => {
+    console.log(`Server running on http://[${HOST}]:${PORT}`);
+    console.log("Alwaysdata IP:", process.env.IP);
+    console.log("Alwaysdata PORT:", process.env.PORT);
 });

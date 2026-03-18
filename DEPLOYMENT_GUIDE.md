@@ -21,8 +21,15 @@ Ajoutez `fiskeo.fr` et configurez les DNS chez votre fournisseur (IONOS) :
 
 ## 2. Backend (Alwaysdata)
 
+### Fichiers requis dans `www/server`
+Assurez-vous d'avoir ces 4 éléments dans votre dossier backend :
+1. `index.js` (le serveur)
+2. `.env` (vos secrets)
+3. **`package.json`** (indispensable pour les `import` ESM)
+4. `database.sqlite` (votre base de données)
+
 ### Configuration du site
-- **Commande** : `node server/index.js`
+- **Commande** : `node index.js`
 - **Répertoire** : `www/server`
 
 ### Variables d'environnement (Web sites > Sites > Environnement)
