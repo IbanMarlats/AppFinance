@@ -101,7 +101,7 @@ function FinanceApp() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Finance<span className="text-indigo-600">AI</span></h1>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Fiskeo</h1>
             <p className="text-slate-500">Gestion financière simplifiée pour pros</p>
           </div>
           {isReset ? (
