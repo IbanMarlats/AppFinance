@@ -1,7 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-
-import { useAuth, API_URL } from './AuthContext';
+import { API_URL } from './AuthContext';
 
 const FinanceContext = createContext();
 
@@ -30,8 +29,6 @@ export const FinanceProvider = ({ children }) => {
                 setSettings(sRes.data);
             } catch (err) {
                 console.error('Error fetching data:', err);
-                // Optionally handle 401s here if we want to force logout, 
-                // but AuthContext should likely handle that if we verified user first.
             }
         };
         fetchData();

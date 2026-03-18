@@ -537,6 +537,8 @@ export default function GoalsDashboard() {
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
         </div>
     );
 }
