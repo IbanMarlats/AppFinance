@@ -9,6 +9,7 @@ import PlatformManager from './components/settings/PlatformManager';
 import SettingsManager from './components/settings/SettingsManager';
 import UserProfile from './components/settings/UserProfile';
 import Layout from './components/layout/Layout';
+import LandingPage from './components/landing/LandingPage';
 
 // ...
 
@@ -28,6 +29,9 @@ import CookieConsent from './components/ui/CookieConsent';
 import { useNavigate, useLocation, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import PremiumPage from './components/payment/PremiumPage';
 import PaymentResult from './components/payment/PaymentResult';
+import MentionsLegales from './components/legal/MentionsLegales';
+import PrivacyPolicy from './components/legal/PrivacyPolicy';
+import Contact from './components/legal/Contact';
 
 function FinanceApp() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -61,6 +65,7 @@ function FinanceApp() {
   const [isLogin, setIsLogin] = useState(true);
   const [isReset, setIsReset] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
 
   // Track Visitor
   const trackVisit = async () => {
@@ -83,22 +88,54 @@ function FinanceApp() {
 
   useEffect(() => {
     // Check for verify token or reset token...
-    // Reset logic handled below or via route? 
-    // Existing logic seems to handle password reset via query params on same page.
     const params = new URLSearchParams(window.location.search);
     if (params.get('token') && window.location.pathname === '/reset-password') {
       setIsLogin(false);
       setIsReset(true);
+      setShowAuth(true); // Ensure auth view is shown if we have a reset token
     }
   }, []);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500">Chargement...</div>;
 
   if (!user) {
-    // Public Routes or Auth Screen
-    // Maybe allow /premium to be seen public? No, need user to link payment.
+    const publicPaths = ['/mentions-legales', '/privacy', '/contact'];
+    const isPublicPath = publicPaths.includes(location.pathname);
+
+    if (!showAuth && !isReset && !isPublicPath) {
+      return (
+        <LandingPage 
+          onLogin={() => { setIsLogin(true); setShowAuth(true); }}
+          onRegister={() => { setIsLogin(false); setShowAuth(true); }}
+        />
+      );
+    }
+
+    if (isPublicPath) {
+      return (
+        <Routes>
+          <Route path="/mentions-legales" element={<MentionsLegales />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      );
+    }
+
+    // Auth Screen
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <button 
+          onClick={() => setShowAuth(false)}
+          className="mb-8 text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-2 group"
+        >
+          <div className="p-2 rounded-full group-hover:bg-indigo-50 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+          </div>
+          Retour à l'accueil
+        </button>
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-slate-900 mb-2">Fiskeo</h1>
@@ -175,6 +212,9 @@ function FinanceApp() {
         } />
         <Route path="/success" element={<PaymentResult />} />
         <Route path="/cancel" element={<PaymentResult />} />
+        <Route path="/mentions-legales" element={<MentionsLegales />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/contact" element={<Contact />} />
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

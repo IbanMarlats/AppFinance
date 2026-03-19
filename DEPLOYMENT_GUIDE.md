@@ -21,12 +21,14 @@ Ajoutez `fiskeo.fr` et configurez les DNS chez votre fournisseur (IONOS) :
 
 ## 2. Backend (Alwaysdata)
 
-### Fichiers requis dans `www/server`
-Assurez-vous d'avoir ces 4 éléments dans votre dossier backend :
-1. `index.js` (le serveur)
-2. `.env` (vos secrets)
-3. **`package.json`** (indispensable pour les `import` ESM)
-4. `database.sqlite` (votre base de données)
+### Fichiers et dossiers requis dans `www/server`
+Vous devez copier l'intégralité du dossier `server/` dans `www/server/` sur Alwaysdata. Cela inclut :
+1. **Les fichiers racine** : `index.js`, `.env`, `package.json`, `database.sqlite`.
+2. **Tous les sous-dossiers** : `routes/`, `utils/`, `middleware/`, `services/`, `cron/`, `uploads/`.
+
+### Méthode de transfert
+- **FTP / SFTP** : C'est la méthode la plus simple pour transférer tous les dossiers d'un coup. (Vos identifiants sont dans le mail de bienvenue d'Alwaysdata ou dans la section **FTP**).
+- **SSH** : Pour les utilisateurs avancés, vous pouvez utiliser `scp` ou `git`.
 
 ### Configuration du site
 - **Commande** : `node index.js`
