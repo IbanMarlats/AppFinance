@@ -2,7 +2,15 @@ import jwt from 'jsonwebtoken';
 import { SECRET_KEY } from '../utils/crypto.js';
 
 export const authenticateToken = (req, res, next) => {
-    const token = req.cookies.token;
+    // Look for token in cookies or Authorization header
+    let token = req.cookies.token;
+    
+    if (!token && req.headers.authorization) {
+        const authHeader = req.headers.authorization;
+        if (authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+        }
+    }
     
     // Debug logging for production troubleshooting
     if (!token) {

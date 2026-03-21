@@ -113,7 +113,11 @@ router.post('/register', async (req, res) => {
                 sameSite: 'none',
                 secure: true // Forced true for cross-site support
             });
-            res.status(201).json({ message: 'User created. Please check email.', user: { id, email, is_verified: 0, role, declaration_frequency: declaration_frequency || 'monthly' } });
+            res.status(201).json({ 
+                message: 'User created. Please check email.', 
+                token, 
+                user: { id, email, is_verified: 0, role, declaration_frequency: declaration_frequency || 'monthly' } 
+            });
         }
     );
 });
@@ -164,12 +168,12 @@ router.post('/login', (req, res) => {
 
         res.json({
             message: 'Logged in',
+            token,
             user: {
                 id: user.id,
                 email: email,
                 is_verified: !!user.is_verified,
                 role: user.role || 'admin',
-                is_premium: !!user.is_premium,
                 is_premium: !!user.is_premium,
                 subscription_plan: user.subscription_plan,
                 premium_until: user.premium_until,
