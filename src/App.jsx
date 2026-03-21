@@ -32,8 +32,30 @@ import PaymentResult from './components/payment/PaymentResult';
 import MentionsLegales from './components/legal/MentionsLegales';
 import PrivacyPolicy from './components/legal/PrivacyPolicy';
 import Contact from './components/legal/Contact';
+import { TourProvider, useTour } from '@reactour/tour';
+import { tutorialSteps } from './components/tutorial/TutorialSteps';
+
+function TutorialController() {
+  const { currentStep, isOpen } = useTour();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const step = tutorialSteps[currentStep];
+    if (step?.path) {
+      const currentPath = location.pathname + location.search;
+      if (currentPath !== step.path) {
+        navigate(step.path);
+      }
+    }
+  }, [currentStep, isOpen, navigate, location.pathname, location.search]);
+
+  return null;
+}
 
 function FinanceApp() {
+  const { setIsOpen, setSteps, setCurrentStep } = useTour();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -96,6 +118,17 @@ function FinanceApp() {
     }
   }, []);
 
+  // Auto-start tutorial for new users
+  useEffect(() => {
+    if (user && localStorage.getItem('fiskeo_first_login') === 'true') {
+      localStorage.removeItem('fiskeo_first_login');
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        setIsOpen(true);
+      }, 1000);
+    }
+  }, [user, setIsOpen]);
+
   if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500">Chargement...</div>;
 
   if (!user) {
@@ -152,6 +185,7 @@ function FinanceApp() {
       </div>
     );
   }
+
 
   // Rewrite Active Tab check
   const handleTabChange = (newTab) => {
@@ -226,7 +260,43 @@ function FinanceApp() {
 export default function App() {
   return (
     <AuthProvider>
-      <FinanceApp />
+      <TourProvider 
+        steps={tutorialSteps}
+        padding={0}
+        styles={{
+          popover: (base) => ({
+            ...base,
+            borderRadius: '1rem',
+            padding: '1rem',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+          }),
+          mask: (base) => ({
+            ...base,
+            opacity: 0.7,
+          }),
+          maskArea: (base) => ({
+             ...base,
+             rx: 12,
+          }),
+          badge: (base) => ({
+            ...base,
+            backgroundColor: '#4f46e5',
+          }),
+          dot: (base, state) => ({
+            ...base,
+            backgroundColor: state.current === state.index ? '#4f46e5' : '#e2e8f0',
+          }),
+          close: (base) => ({
+            ...base,
+            color: '#94a3b8',
+            '&:hover': { color: '#4f46e5' }
+          })
+        }}
+        onClickMask={({ setIsOpen }) => setIsOpen(false)}
+      >
+        <TutorialController />
+        <FinanceApp />
+      </TourProvider>
     </AuthProvider>
   );
 }

@@ -28,6 +28,7 @@ export default function Register({ onSwitch }) {
 
         try {
             await register(email.trim(), password, role, newsletter, declarationFrequency);
+            localStorage.setItem('fiskeo_first_login', 'true');
         } catch (err) {
             setError(err.response?.data?.error || 'Registration failed');
         }

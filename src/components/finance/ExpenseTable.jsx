@@ -229,7 +229,7 @@ export default function ExpenseTable(props) {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl border border-slate-200 mb-8 shadow-xl shadow-slate-200/60 relative">
+            <form onSubmit={handleSubmit} data-tour="expense-form" className="bg-white p-6 rounded-2xl border border-slate-200 mb-8 shadow-xl shadow-slate-200/60 relative">
                 {/* Decorative Background Layer - Clipped */}
                 <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
                     <div className="absolute top-0 right-0 p-6 opacity-5">
@@ -394,7 +394,7 @@ export default function ExpenseTable(props) {
                 </div>
 
                 <div className="flex justify-end items-center pt-2">
-                    <button type="submit" className="btn-primary shadow-md">
+                    <button type="submit" data-tour="expense-submit" className="btn-primary shadow-md">
                         Ajouter
                     </button>
                 </div>

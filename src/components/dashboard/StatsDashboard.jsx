@@ -393,7 +393,7 @@ export default function StatsDashboard() {
                 )}
 
                 {/* Global Summary Card */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8">
+                <div data-tour="stats-global" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8">
                     <h2 className="text-xl font-bold text-slate-800 mb-6">Bilan Global {selectedYear}</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
@@ -506,7 +506,7 @@ export default function StatsDashboard() {
 
                 {
                     visibleSections.platforms && (
-                        <div className={`bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8 relative overflow-hidden ${!user.is_premium ? 'min-h-[400px]' : ''}`}>
+                        <div data-tour="stats-premium" className={`bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8 relative overflow-hidden ${!user.is_premium ? 'min-h-[400px]' : ''}`}>
                             <h2 className="text-lg font-bold text-slate-800 mb-6">Détail Revenus par Plateforme</h2>
 
                             {!user.is_premium && (

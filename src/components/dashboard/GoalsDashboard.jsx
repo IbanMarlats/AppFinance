@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Target, TrendingUp, AlertCircle, ChevronLeft, ChevronRight, Save, CheckCircle2, Lock, Calculator, ArrowDown, Calendar, Plus, Trash2, Edit2, Check, X } from 'lucide-react';
+import { useTour } from '@reactour/tour';
 import PremiumSubscriptionBlock from '../ui/PremiumSubscriptionBlock';
 import { useAuth, API_URL } from '../../context/AuthContext';
 
 export default function GoalsDashboard() {
     const { user } = useAuth();
+    const { isOpen: isTourOpen } = useTour();
     const navigate = useNavigate();
     const [year, setYear] = useState(new Date().getFullYear());
     const [goals, setGoals] = useState([]);
@@ -230,7 +232,7 @@ export default function GoalsDashboard() {
     return (
         <div className={`space-y-8 animate-in fade-in duration-500 relative ${!user.is_premium ? 'min-h-[800px]' : ''}`}>
             {/* Global Premium Overlay */}
-            {!user.is_premium && (
+            {!user.is_premium && !isTourOpen && (
                 <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 animate-in fade-in duration-700">
                     <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-2xl border border-slate-100 relative overflow-hidden transform hover:scale-105 transition-transform duration-300">
                         <div className="flex items-center gap-3 mb-6">

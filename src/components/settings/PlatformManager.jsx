@@ -160,7 +160,7 @@ export default function PlatformManager() {
 
                         {/* Action Button */}
                         <div className="flex justify-end pt-2">
-                            <button type="submit" className="w-full md:w-auto px-8 h-12 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-base font-bold rounded-xl transition-all shadow hover:shadow-md">
+                            <button data-tour="add-platform-btn" type="submit" className="w-full md:w-auto px-8 h-12 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-base font-bold rounded-xl transition-all shadow hover:shadow-md">
                                 <Plus className="w-6 h-6 mr-2" /> Ajouter la plateforme
                             </button>
                         </div>

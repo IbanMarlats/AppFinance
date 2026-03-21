@@ -47,10 +47,16 @@ initSubscriptionCron();
 // --- MIDDLEWARE ---
 app.use(cors({
     origin: (origin, callback) => {
-        const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(' ') : ['http://localhost:5173'];
-        if (!origin || allowedOrigins.includes(origin)) {
+        // Build list of allowed origins
+        const allowed = ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
+        if (process.env.FRONTEND_URL) {
+            allowed.push(...process.env.FRONTEND_URL.split(' '));
+        }
+
+        if (!origin || allowed.includes(origin)) {
             callback(null, true);
         } else {
+            console.warn(`CORS blocked for origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },

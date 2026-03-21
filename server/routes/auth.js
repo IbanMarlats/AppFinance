@@ -136,11 +136,14 @@ router.post('/login', (req, res) => {
 
         const validPassword = await bcrypt.compare(password, user.password_hash);
         if (!validPassword) {
+            logEvent('LOGIN_FAIL', `Failed login attempt for email: ${email}`, user.id, req);
             return res.status(400).json({ error: 'Invalid password' });
         }
 
         // Update last_login
         db.run("UPDATE users SET last_login = ? WHERE id = ?", [new Date().toISOString(), user.id]);
+
+        logEvent('LOGIN_SUCCESS', `User logged in: ${email}`, user.id, req);
 
         const token = jwt.sign({ id: user.id, is_verified: !!user.is_verified, role: user.role || 'admin' }, SECRET_KEY, { expiresIn: '30d' });
         res.cookie('token', token, {
@@ -221,6 +224,10 @@ router.post('/resend-verification', (req, res) => {
 
 router.get('/me', authenticateToken, (req, res) => {
     db.get("SELECT email_encrypted, is_verified, role, is_premium, is_gift, created_at, subscription_plan, subscription_status, premium_until, trial_until, is_subject_vat, vat_start_date, declaration_frequency FROM users WHERE id = ?", [req.user.id], (err, row) => {
+        if (err) {
+            console.error("DB Error in /me:", err);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
         if (!row) return res.status(404).json({ error: "User not found" });
         try {
             res.json({

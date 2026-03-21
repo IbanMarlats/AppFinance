@@ -641,7 +641,7 @@ export default function IncomeTable(props) {
     const showCritical = !user?.is_subject_vat && currentYearTotals > TVA_THRESHOLD;
 
     return (
-        <div className="card">
+        <div className="card" data-tour="income-card">
             {/* ... modals ... */}
             <ConfirmationModal
                 isOpen={isModalOpen}
@@ -1068,7 +1068,7 @@ export default function IncomeTable(props) {
 
 
             {/* FORM */}
-            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl border border-slate-200 mb-8 shadow-xl shadow-slate-200/60 relative">
+            <form onSubmit={handleSubmit} data-tour="income-form" className="bg-white p-6 rounded-2xl border border-slate-200 mb-8 shadow-xl shadow-slate-200/60 relative">
                 {/* Decorative Background Layer - Clipped */}
                 <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
                     <div className="absolute top-0 right-0 p-6 opacity-5">
@@ -1338,7 +1338,7 @@ export default function IncomeTable(props) {
 
                 <div className="flex justify-end items-center pt-2">
 
-                    <button type="submit" className={`btn-primary shadow-md ${editingId ? 'bg-orange-600 hover:bg-orange-700' : ''}`}>
+                    <button type="submit" data-tour="income-submit" className={`btn-primary shadow-md ${editingId ? 'bg-orange-600 hover:bg-orange-700' : ''}`}>
                         {editingId ? 'Modifier' : 'Ajouter'}
                     </button>
                 </div>

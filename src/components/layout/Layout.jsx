@@ -12,10 +12,13 @@ import {
     TrendingUp,
     Crown,
     Target,
-    Calendar
+    Calendar,
+    HelpCircle
 } from 'lucide-react';
+import { useTour } from '@reactour/tour';
 
 export default function Layout({ children, activeTab, onTabChange }) {
+    const { setIsOpen } = useTour();
     const { user, logout } = useAuth();
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
 
@@ -48,7 +51,7 @@ export default function Layout({ children, activeTab, onTabChange }) {
             >
                 {/* Logo Area */}
                 <div className="h-16 flex items-center px-6 border-b border-slate-100">
-                    <div className="flex items-center gap-3 text-indigo-600 font-bold text-xl">
+                    <div data-tour="app-logo" className="flex items-center gap-3 text-indigo-600 font-bold text-xl">
                         <div className="p-1.5 bg-indigo-600 rounded-lg text-white">
                             {/* Classic Trend Logo */}
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -67,11 +70,21 @@ export default function Layout({ children, activeTab, onTabChange }) {
                         {isSidebarOpen ? 'Menu' : '...'}
                     </div>
 
-                    <NavItem id="dashboard" icon={LayoutDashboard} label="Tableau de bord" />
-                    <NavItem id="income" icon={Wallet} label="Revenus" />
-                    <NavItem id="expense" icon={Receipt} label="Dépenses" />
-                    <NavItem id="goals" icon={Target} label="Objectifs" />
-                    <NavItem id="recap" icon={Calendar} label="Bilans Mensuels" />
+                    <div data-tour="nav-dashboard">
+                        <NavItem id="dashboard" icon={LayoutDashboard} label="Tableau de bord" />
+                    </div>
+                    <div data-tour="nav-income">
+                        <NavItem id="income" icon={Wallet} label="Revenus" />
+                    </div>
+                    <div data-tour="nav-expense">
+                        <NavItem id="expense" icon={Receipt} label="Dépenses" />
+                    </div>
+                    <div data-tour="nav-goals">
+                        <NavItem id="goals" icon={Target} label="Objectifs" />
+                    </div>
+                    <div data-tour="nav-recap">
+                        <NavItem id="recap" icon={Calendar} label="Bilans Mensuels" />
+                    </div>
 
                     <div className="my-4 border-t border-slate-100 mx-3"></div>
 
@@ -83,7 +96,9 @@ export default function Layout({ children, activeTab, onTabChange }) {
                         <NavItem id="admin" icon={Shield} label="Administration" />
                     )}
                     <NavItem id="profile" icon={User} label="Profil & Abo" />
-                    <NavItem id="settings" icon={Settings} label="Paramètres" />
+                    <div data-tour="nav-settings">
+                        <NavItem id="settings" icon={Settings} label="Paramètres" />
+                    </div>
                 </div>
 
                 {/* User Footer */}
@@ -114,6 +129,17 @@ export default function Layout({ children, activeTab, onTabChange }) {
                     >
                         <LogOut size={16} />
                         {isSidebarOpen && "Déconnexion"}
+                    </button>
+
+                    <button
+                        onClick={() => setIsOpen(true)}
+                        data-tour="nav-help"
+                        className={`w-full flex items-center gap-2 rounded-lg border border-slate-200 p-2 mt-2 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors text-xs font-medium
+                            ${!isSidebarOpen && 'justify-center'}
+                        `}
+                    >
+                        <HelpCircle size={16} />
+                        {isSidebarOpen && "Aide / Tuto"}
                     </button>
                 </div>
             </aside>

@@ -36,7 +36,7 @@ router.post('/visit', (req, res) => {
         [id, visitor_id, ipHash],
         (err) => {
             if (err) {
-                console.error("Error logging visit:", err);
+                console.error("DB Error in /analytics/visit:", err);
                 return res.status(500).json({ error: 'Failed to log visit' });
             }
             res.json({ success: true });

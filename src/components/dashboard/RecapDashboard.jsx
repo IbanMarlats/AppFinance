@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useTour } from '@reactour/tour';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import { Calendar, Download, RefreshCw, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Wallet, Receipt } from 'lucide-react';
 import RecapView from './RecapView';
@@ -9,6 +10,7 @@ import { useSearchParams } from 'react-router-dom';
 
 export default function RecapDashboard() {
     const { user } = useAuth();
+    const { isOpen: isTourOpen } = useTour();
     const [searchParams, setSearchParams] = useSearchParams();
     const [recaps, setRecaps] = useState([]);
     const [yearlyRecaps, setYearlyRecaps] = useState([]);
@@ -51,7 +53,7 @@ export default function RecapDashboard() {
         }
     };
 
-    if (!user.is_premium) {
+    if (!user.is_premium && !isTourOpen) {
         return (
             <div className="max-w-4xl mx-auto py-8">
                 <div className="text-center mb-10">

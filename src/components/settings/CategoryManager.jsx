@@ -77,6 +77,7 @@ export default function CategoryManager() {
                             <button
                                 type="button"
                                 onClick={handleAdd}
+                                data-tour="add-category-btn"
                                 className="w-full md:w-auto px-8 h-12 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-base font-bold rounded-xl transition-all shadow hover:shadow-md"
                             >
                                 <Plus className="w-6 h-6 mr-2" /> Ajouter la catégorie
