@@ -101,7 +101,7 @@ router.post('/register', async (req, res) => {
             res.cookie('token', token, {
                 httpOnly: true,
                 maxAge: 30 * 24 * 60 * 60 * 1000,
-                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+                sameSite: 'lax',
                 secure: process.env.NODE_ENV === 'production'
             });
             res.status(201).json({ message: 'User created. Please check email.', user: { id, email, is_verified: 0, role, declaration_frequency: declaration_frequency || 'monthly' } });
@@ -149,7 +149,7 @@ router.post('/login', (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             maxAge: 30 * 24 * 60 * 60 * 1000,
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            sameSite: 'lax',
             secure: process.env.NODE_ENV === 'production'
         });
 

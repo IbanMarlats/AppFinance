@@ -31,6 +31,9 @@ import contactRoutes from './routes/contact.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust Proxy (Essential for correctly identifying HTTPS behind Alwaysdata/Heroku/etc)
+app.set('trust proxy', 1);
+
 console.log("Current working directory:", process.cwd());
 
 // Initialize Email Transporter
@@ -47,7 +50,7 @@ initSubscriptionCron();
 app.use(cors({
     origin: (origin, callback) => {
         // Build list of allowed origins
-        const allowed = ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
+        const allowed = ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'https://ibanmarlats.alwaysdata.net'];
         if (process.env.FRONTEND_URL) {
             allowed.push(...process.env.FRONTEND_URL.split(' '));
         }
