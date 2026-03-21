@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://ibanmarlats.alwaysdata.net/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
