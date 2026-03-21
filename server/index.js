@@ -17,6 +17,15 @@ import { authenticateToken } from './middleware/auth.js';
 
 // Routes
 import authRoutes from './routes/auth.js';
+
+// Global Error Handlers to prevent crashing and provide logs
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL: Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+});
 import platformRoutes from './routes/platforms.js';
 import incomeRoutes from './routes/incomes.js';
 import expenseRoutes from './routes/expenses.js';
@@ -117,8 +126,20 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const HOST = process.env.IP || '::';
 
-app.listen(PORT, HOST, () => {
-    console.log(`Server running on http://[${HOST}]:${PORT}`);
+// Health check
+app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
+// Final Error Middleware
+app.use((err, req, res, next) => {
+    console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
+    res.status(500).json({ 
+        error: 'Internal Server Error', 
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Une erreur interne est survenue'
+    });
+});
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
     console.log("Alwaysdata IP:", process.env.IP);
     console.log("Alwaysdata PORT:", process.env.PORT);
 });
