@@ -53,7 +53,17 @@ export const tutorialSteps = [
     content: (
       <div className="p-2">
         <h3 className="text-md font-bold text-indigo-600 mb-1">Ajouter un Revenu</h3>
-        <p className="text-slate-600 text-sm">Enregistrez vos ventes ici. Vous pourrez les modifier ou les supprimer plus tard si besoin.</p>
+        <p className="text-slate-600 text-sm">Enregistrez vos ventes ici. Fiskeo calcule automatiquement votre <b>revenu net</b> après déduction des commissions de plateforme et des cotisations URSSAF.</p>
+      </div>
+    ),
+  },
+  {
+    selector: '[data-tour="income-columns-btn"]',
+    path: '/?tab=income',
+    content: (
+      <div className="p-2">
+        <h3 className="text-md font-bold text-indigo-600 mb-1">Personnaliser le tableau</h3>
+        <p className="text-slate-600 text-sm">Cliquez ici pour choisir les colonnes que vous voulez afficher ou masquer dans votre tableau de revenus.</p>
       </div>
     ),
   },

@@ -1,7 +1,12 @@
 import crypto from 'crypto';
+import dotenv from 'dotenv';
+
+// Ensure env vars are loaded even if this is imported early
+dotenv.config({ path: 'server/.env' });
+dotenv.config();
 
 // CRITICAL: Must be stable across restarts to prevent 401 errors/decryption failures
-const SECRET_KEY = 'stable_secret_key_fixed_for_dev_mode';
+const SECRET_KEY = process.env.SECRET_KEY || 'stable_secret_key_fixed_for_dev_mode';
 const ENCRYPTION_KEY = crypto.scryptSync(SECRET_KEY, 'salt', 32); // Derived key
 const ALGORITHM = 'aes-256-cbc';
 

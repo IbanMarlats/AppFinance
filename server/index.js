@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
-// Attempt to load .env from server directory if running from root
+// Load environment variables immediately
 dotenv.config({ path: 'server/.env' });
-// Also try default (root) just in case they moved it
 dotenv.config();
 
 console.log("=== SERVER STARTING UP ===");

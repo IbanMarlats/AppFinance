@@ -1366,6 +1366,7 @@ export default function IncomeTable(props) {
 
                 <button
                     onClick={() => setShowColumnMenu(!showColumnMenu)}
+                    data-tour="income-columns-btn"
                     className="p-1.5 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 shadow-sm transition-colors"
                     title="Gérer les colonnes visible"
                 >
