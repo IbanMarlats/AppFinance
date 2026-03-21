@@ -50,7 +50,7 @@ initSubscriptionCron();
 app.use(cors({
     origin: (origin, callback) => {
         // Build list of allowed origins
-        const allowed = ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'https://ibanmarlats.alwaysdata.net'];
+        const allowed = ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'https://ibanmarlats.alwaysdata.net', 'https://fiskeo.fr', 'https://www.fiskeo.fr'];
         if (process.env.FRONTEND_URL) {
             allowed.push(...process.env.FRONTEND_URL.split(' '));
         }
