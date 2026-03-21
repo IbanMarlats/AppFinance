@@ -11,7 +11,16 @@ import { logEvent } from '../utils/logger.js';
 
 const router = express.Router();
 
-// Register
+// Temporary debug route
+router.get('/debug-cookies', (req, res) => {
+    res.json({
+        cookies: req.cookies,
+        signedCookies: req.signedCookies,
+        headers: req.headers,
+        env: process.env.NODE_ENV,
+        secure: req.secure
+    });
+});
 router.post('/register', async (req, res) => {
     let { email, password, role, newsletter, declaration_frequency } = req.body;
 
