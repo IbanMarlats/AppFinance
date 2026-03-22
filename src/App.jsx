@@ -10,7 +10,6 @@ import SettingsManager from './components/settings/SettingsManager';
 import UserProfile from './components/settings/UserProfile';
 import Layout from './components/layout/Layout';
 import LandingPage from './components/landing/LandingPage';
-import LogoIcon from './assets/logo/iconefiskeo.png';
 
 // ...
 
@@ -172,7 +171,6 @@ function FinanceApp() {
         </button>
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
           <div className="text-center mb-8">
-            <img src={LogoIcon} alt="Fiskeo" className="h-12 w-auto mx-auto mb-4" />
             <h1 className="text-3xl font-bold text-slate-900 mb-2">Fiskeo</h1>
             <p className="text-slate-500">Gestion financière simplifiée pour pros</p>
           </div>

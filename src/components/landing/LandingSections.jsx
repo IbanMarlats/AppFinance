@@ -14,16 +14,18 @@ import {
   Lock,
   Heart
 } from 'lucide-react';
-import LogoFull from '../../assets/logo/logofiskeo.png';
-import LogoIcon from '../../assets/logo/iconefiskeo.png';
 
 export const Navbar = ({ onLogin, onRegister }) => (
   <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
     <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
       <div className="flex justify-between items-center h-16 gap-2">
-        <div className="flex items-center space-x-2">
-          <img src={LogoFull} alt="Fiskeo" className="h-10 w-auto hidden sm:block" />
-          <img src={LogoIcon} alt="Fiskeo" className="h-10 w-auto sm:hidden" />
+        <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+            <TrendingUp className="text-white w-6 h-6" />
+          </div>
+          <span className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-indigo-600 hidden min-[450px]:block">
+            Fiskeo
+          </span>
         </div>
         <div className="flex items-center space-x-1 sm:space-x-4 shrink-0">
           <button 
@@ -313,7 +315,7 @@ export const Footer = () => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
         <div className="flex items-center space-x-2">
-          <img src={LogoIcon} alt="Fiskeo" className="h-8 w-auto" />
+          <TrendingUp className="text-indigo-600 w-6 h-6" />
           <span className="text-xl font-bold text-slate-900 tracking-tight">Fiskeo</span>
         </div>
         

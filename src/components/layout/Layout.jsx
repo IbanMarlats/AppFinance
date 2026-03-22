@@ -16,7 +16,6 @@ import {
     HelpCircle
 } from 'lucide-react';
 import { useTour } from '@reactour/tour';
-import LogoIcon from '../../assets/logo/iconefiskeo.png';
 
 export default function Layout({ children, activeTab, onTabChange }) {
     const { setIsOpen } = useTour();
@@ -53,7 +52,14 @@ export default function Layout({ children, activeTab, onTabChange }) {
                 {/* Logo Area */}
                 <div className="h-16 flex items-center px-6 border-b border-slate-100">
                     <div data-tour="app-logo" className="flex items-center gap-3 text-indigo-600 font-bold text-xl">
-                        <img src={LogoIcon} alt="Fiskeo" className="h-8 w-auto" />
+                        <div className="p-1.5 bg-indigo-600 rounded-lg text-white">
+                            {/* Classic Trend Logo */}
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22 6L13.5 14.5L8.5 9.5L2 16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M22 6V10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M22 6H18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </div>
                         {isSidebarOpen && <span className="tracking-tight text-slate-900">Fiskeo</span>}
                     </div>
                 </div>
