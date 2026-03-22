@@ -17,26 +17,26 @@ import {
 
 export const Navbar = ({ onLogin, onRegister }) => (
   <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex justify-between items-center h-16">
-        <div className="flex items-center space-x-2">
+    <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+      <div className="flex justify-between items-center h-16 gap-2">
+        <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
             <TrendingUp className="text-white w-6 h-6" />
           </div>
-          <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-indigo-600">
+          <span className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-indigo-600 hidden min-[450px]:block">
             Fiskeo
           </span>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-1 sm:space-x-4 shrink-0">
           <button 
             onClick={onLogin}
-            className="text-slate-600 hover:text-indigo-600 font-medium transition-colors px-3 py-2"
+            className="text-slate-600 hover:text-indigo-600 font-medium transition-colors px-1 sm:px-3 py-2 text-[13px] sm:text-base"
           >
             Connexion
           </button>
           <button 
             onClick={onRegister}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 text-[13px] sm:text-base whitespace-nowrap"
           >
             Commencer
           </button>
