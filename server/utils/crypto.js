@@ -2,8 +2,10 @@ import crypto from 'crypto';
 import dotenv from 'dotenv';
 
 // Ensure env vars are loaded even if this is imported early
-dotenv.config({ path: 'server/.env' });
-dotenv.config();
+// Try multiple common locations for .env files
+dotenv.config(); // Standard .env in CWD
+dotenv.config({ path: 'server/.env' }); // Root-relative path
+dotenv.config({ path: '../.env' }); // Up-one level (if running from subfolder)
 
 // CRITICAL: Must be stable across restarts to prevent 401 errors/decryption failures
 const SECRET_KEY = process.env.SECRET_KEY || 'stable_secret_key_fixed_for_dev_mode';
@@ -11,7 +13,11 @@ const ENCRYPTION_KEY = crypto.scryptSync(SECRET_KEY, 'salt', 32); // Derived key
 const ALGORITHM = 'aes-256-cbc';
 
 // Debug log for verification
-console.log("Using CONSTANT SECRET_KEY hash:", crypto.createHash('md5').update(SECRET_KEY).digest('hex'));
+const currentKeyHash = crypto.createHash('md5').update(SECRET_KEY).digest('hex');
+console.log("Using CONSTANT SECRET_KEY hash:", currentKeyHash);
+if (SECRET_KEY === 'stable_secret_key_fixed_for_dev_mode') {
+    console.warn("WARNING: Using hardcoded fallback SECRET_KEY. This will break previous sessions if the .env key was different.");
+}
 
 export function encrypt(text) {
     const iv = crypto.randomBytes(16);

@@ -7,17 +7,18 @@ export const API_URL = (window.location.hostname === 'localhost')
     ? 'http://localhost:3001/api' 
     : 'https://ibanmarlats.alwaysdata.net/api';
 
+// Initial Axios Configuration (Top-level to ensure it runs immediately)
+const token = localStorage.getItem('fiskeo_token');
+if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
+axios.defaults.withCredentials = true;
+
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Sync axios headers with token in localStorage
     useEffect(() => {
-        const token = localStorage.getItem('fiskeo_token');
-        if (token) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        }
-        axios.defaults.withCredentials = true;
         checkUser();
     }, []);
 
