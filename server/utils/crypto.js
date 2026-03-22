@@ -27,11 +27,31 @@ export function encrypt(text) {
     return iv.toString('hex') + ':' + encrypted;
 }
 
+const FALLBACK_SECRET_KEY = 'stable_secret_key_fixed_for_dev_mode';
+const FALLBACK_ENCRYPTION_KEY = crypto.scryptSync(FALLBACK_SECRET_KEY, 'salt', 32);
+
 export function decrypt(text) {
+    try {
+        return performDecryption(text, ENCRYPTION_KEY);
+    } catch (err) {
+        // If main key fails, try the fixed dev key as a fallback for transitioned accounts
+        if (SECRET_KEY !== FALLBACK_SECRET_KEY) {
+            try {
+                return performDecryption(text, FALLBACK_ENCRYPTION_KEY);
+            } catch (fallbackErr) {
+                // Both failed
+            }
+        }
+        throw err;
+    }
+}
+
+function performDecryption(text, key) {
     const textParts = text.split(':');
+    if (textParts.length < 2) throw new Error("Invalid encrypted format");
     const iv = Buffer.from(textParts.shift(), 'hex');
     const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-    const decipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;

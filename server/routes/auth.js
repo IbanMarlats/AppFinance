@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,12 +14,15 @@ const router = express.Router();
 
 // Temporary debug route
 router.get('/debug-cookies', (req, res) => {
+    const hash = crypto.createHash('md5').update(SECRET_KEY || '').digest('hex');
     res.json({
         cookies: req.cookies,
         signedCookies: req.signedCookies,
         headers: req.headers,
         env: process.env.NODE_ENV,
-        secure: req.secure
+        secure: req.secure,
+        SECRET_KEY_HASH_MD5: hash,
+        SECRET_KEY_SOURCE: process.env.SECRET_KEY ? 'Environment' : 'Fallback (Default)'
     });
 });
 router.post('/register', async (req, res) => {
