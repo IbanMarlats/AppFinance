@@ -80,11 +80,21 @@ export default function IncomeTable(props) {
         if (user?.is_subject_vat) {
             setVatRate('20');
             // Auto-enable VAT columns if subject to VAT
-            setVisibleColumns(prev => ({ ...prev, vat: true, deductibleVat: true }));
+            setVisibleColumns(prev => {
+                if (!prev.vat || !prev.deductibleVat) {
+                    return { ...prev, vat: true, deductibleVat: true };
+                }
+                return prev;
+            });
         } else {
             setVatRate('0');
             // Auto-disable VAT columns if NOT subject to VAT
-            setVisibleColumns(prev => ({ ...prev, vat: false, deductibleVat: false }));
+            setVisibleColumns(prev => {
+                if (prev.vat || prev.deductibleVat) {
+                    return { ...prev, vat: false, deductibleVat: false };
+                }
+                return prev;
+            });
         }
     }, [user?.is_subject_vat]);
 
@@ -284,24 +294,32 @@ export default function IncomeTable(props) {
 
     // ... existing ...
     const [errors, setErrors] = useState({});
-    const [visibleColumns, setVisibleColumns] = useState({
-        date: true,
-        name: true,
-        platform: true,
-        amount: true,
-        vat: user?.is_subject_vat || false,
-        tjm: true,
-        fee: true,
-        deductibleVat: user?.is_subject_vat || false,
-        urssaf: true,
-        net: true,
-        // E-commerce columns
-        quantity: true,
-        unit_price: true,
-        shipping_fees: true,
-        transaction_fees: true,
-        unit_cost: true
+    const [visibleColumns, setVisibleColumns] = useState(() => {
+        const saved = localStorage.getItem('fiskeo_income_columns');
+        if (saved) return JSON.parse(saved);
+        return {
+            date: true,
+            name: true,
+            platform: true,
+            amount: true,
+            vat: user?.is_subject_vat || false,
+            tjm: false, // Default to false if user thinks it's annoying, or let them hide it once. I'll set it to true for now but rely on persistence.
+            fee: true,
+            deductibleVat: user?.is_subject_vat || false,
+            urssaf: true,
+            net: true,
+            // E-commerce columns
+            quantity: true,
+            unit_price: true,
+            shipping_fees: true,
+            transaction_fees: true,
+            unit_cost: true
+        };
     });
+
+    useEffect(() => {
+        localStorage.setItem('fiskeo_income_columns', JSON.stringify(visibleColumns));
+    }, [visibleColumns]);
     const [showColumnMenu, setShowColumnMenu] = useState(false);
 
     const handleSubmit = async (e) => {
