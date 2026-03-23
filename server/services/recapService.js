@@ -79,7 +79,7 @@ export const generateMonthlyRecap = async (userId, month, year) => {
         else if (user.role === 'ecommerce') socialRate = (parseFloat(settings.urssaf_ecommerce) || 12.3) / 100;
         else socialRate = (parseFloat(settings.urssaf_freelance) || 25) / 100;
 
-        const estimatedUrssaf = totalIncome * socialRate;
+        const estimatedUrssaf = Math.round(totalIncome * socialRate);
 
         // Top Revenue Source
         const incomeByPlatform = {};
@@ -199,7 +199,7 @@ export const generateMonthlyRecap = async (userId, month, year) => {
             `, [userId, quarterStartDate, quarterEndDate]);
 
             const quarterTotalIncome = quarterIncomes.reduce((sum, inc) => sum + inc.amount, 0);
-            const quarterTotalUrssaf = quarterTotalIncome * socialRate;
+            const quarterTotalUrssaf = Math.round(quarterTotalIncome * socialRate);
 
             recapData.stats.quarterlyTotalIncome = quarterTotalIncome;
             recapData.stats.quarterlyTotalUrssaf = quarterTotalUrssaf;
@@ -330,7 +330,7 @@ export const generateYearlyRecap = async (userId, year) => {
         if (user.role === 'freelance_bnc') socialRate = 0.231;
         if (user.role === 'ecommerce') socialRate = 0.123;
 
-        const totalUrssaf = totalIncome * socialRate;
+        const totalUrssaf = Math.round(totalIncome * socialRate);
 
         // 6. Annual Goal (Revenue)
         // Check for an annual goal for this year

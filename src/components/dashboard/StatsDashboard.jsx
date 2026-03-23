@@ -192,7 +192,8 @@ export default function StatsDashboard() {
         }
 
 
-        const urssaf = gross * urssafRate;
+        // URSSAF is calculated on GROSS amount and rounded to nearest euro
+        const urssaf = Math.round(gross * urssafRate);
 
         // Final
         const final = gross - effectiveFee - urssaf;

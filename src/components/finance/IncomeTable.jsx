@@ -578,8 +578,8 @@ export default function IncomeTable(props) {
             }
         }
 
-        // URSSAF is calculated on GROSS amount
-        const urssaf = gross * urssafRate;
+        // URSSAF is calculated on GROSS amount and rounded to nearest euro
+        const urssaf = Math.round(gross * urssafRate);
 
         // Final Net Calculation
         // Net = Gross - Effective Fee - URSSAF

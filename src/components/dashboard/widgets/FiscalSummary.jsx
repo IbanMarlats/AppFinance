@@ -69,7 +69,7 @@ export default function FiscalSummary({ year }) {
             const base = stats[cat];
             if (base > 0) {
                 const r = RATES[cat];
-                urgeTotal += base * ((r.urge + r.cpf) / 100);
+                urgeTotal += Math.round(base * ((r.urge + r.cpf) / 100));
 
                 // Liberatoire vs Classic
                 if (isLiberatoire) {
@@ -136,7 +136,7 @@ export default function FiscalSummary({ year }) {
                                 return (
                                     <div key={key} className="flex justify-between items-center text-sm">
                                         <span className="text-slate-600">{r.label} <span className="text-xs text-slate-400">({rate}%)</span></span>
-                                        <span className="font-medium text-slate-900">{(amount * rate / 100).toFixed(2)}€</span>
+                                        <span className="font-medium text-slate-900">{Math.round(amount * rate / 100).toFixed(2)}€</span>
                                     </div>
                                 );
                             })}
