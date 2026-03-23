@@ -61,6 +61,12 @@ export default function PremiumSubscriptionBlock() {
                     </div>
                     <span>Pilotage complet de la micro-entreprise</span>
                 </li>
+                <li className="flex items-center gap-2 font-semibold">
+                    <div className="p-1 rounded-full bg-indigo-100 text-indigo-600">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <span className="text-indigo-700">Historique instantané (2 derniers mois)</span>
+                </li>
             </ul>
 
             <div className="grid grid-cols-1 gap-3">

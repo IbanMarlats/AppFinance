@@ -14,6 +14,7 @@ export default function RecapDashboard() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [recaps, setRecaps] = useState([]);
     const [yearlyRecaps, setYearlyRecaps] = useState([]);
+    const [generating, setGenerating] = useState(false);
     const [viewMode, setViewMode] = useState('monthly'); // 'monthly' | 'annual'
 
     // selectedRecap is now derived from URL
@@ -50,6 +51,28 @@ export default function RecapDashboard() {
             setYearlyRecaps(res.data);
         } catch (err) {
             console.error("Failed to fetch yearly recaps", err);
+        }
+    };
+
+    const handleGenerateMissing = async () => {
+        setGenerating(true);
+        try {
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+            
+            // Generate for previous months of the year
+            for (let m = 1; m < currentMonth; m++) {
+                await axios.post(`${API_URL}/recaps/generate-monthly`, { month: m, year: currentYear });
+            }
+            // Refresh
+            fetchRecaps();
+            fetchYearlyRecaps();
+            alert("Bilans générés avec succès !");
+        } catch (err) {
+            console.error("Failed to generate recaps", err);
+            alert("Une erreur est survenue lors de la génération.");
+        } finally {
+            setGenerating(false);
         }
     };
 
@@ -133,6 +156,17 @@ export default function RecapDashboard() {
                         Annuels
                     </button>
                 </div>
+
+                {viewMode === 'monthly' && (
+                    <button
+                        onClick={handleGenerateMissing}
+                        disabled={generating}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm font-bold shadow-md shadow-indigo-100 disabled:opacity-50"
+                    >
+                        {generating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                        {generating ? "Génération..." : "Actualiser les archives 2026"}
+                    </button>
+                )}
             </div>
 
             {viewMode === 'monthly' ? (

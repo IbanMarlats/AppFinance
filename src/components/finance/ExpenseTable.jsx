@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
+import { useAuth } from '../../context/AuthContext';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import Select from '../ui/Select';
 import DatePicker from '../ui/DatePicker';
 
 export default function ExpenseTable(props) {
     const { expenses, addExpense, deleteExpense, updateExpense, categories } = useFinance();
+    const { user } = useAuth();
+
 
     // Year Filtering
     const [selectedYears, setSelectedYears] = useState([new Date().getFullYear()]);
@@ -287,33 +290,35 @@ export default function ExpenseTable(props) {
                     </div>
 
                     {/* Tax Settings */}
-                    <div className="lg:col-span-1">
-                        <label className="label text-slate-700">TVA</label>
-                        <div className="flex gap-2">
-                            <select
-                                value={vatRate}
-                                onChange={e => setVatRate(e.target.value)}
-                                className="input flex-1 bg-white border-slate-600 text-slate-900 text-sm p-2"
-                            >
-                                <option value="0">0%</option>
-                                <option value="0.055">5.5%</option>
-                                <option value="0.10">10%</option>
-                                <option value="0.20">20%</option>
-                            </select>
-                            <select
-                                value={taxMethod}
-                                onChange={e => setTaxMethod(e.target.value)}
-                                className="input w-20 bg-slate-100 border-slate-400 text-slate-700 text-sm p-2"
-                            >
-                                <option value="ht">HT</option>
-                                <option value="ttc">TTC</option>
-                            </select>
+                    {user?.is_subject_vat && (
+                        <div className="lg:col-span-1">
+                            <label className="label text-slate-700">TVA</label>
+                            <div className="flex gap-2">
+                                <select
+                                    value={vatRate}
+                                    onChange={e => setVatRate(e.target.value)}
+                                    className="input flex-1 bg-white border-slate-600 text-slate-900 text-sm p-2"
+                                >
+                                    <option value="0">0%</option>
+                                    <option value="0.055">5.5%</option>
+                                    <option value="0.10">10%</option>
+                                    <option value="0.20">20%</option>
+                                </select>
+                                <select
+                                    value={taxMethod}
+                                    onChange={e => setTaxMethod(e.target.value)}
+                                    className="input w-20 bg-slate-100 border-slate-400 text-slate-700 text-sm p-2"
+                                >
+                                    <option value="ht">HT</option>
+                                    <option value="ttc">TTC</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className="lg:col-span-1 relative">
                         <label className="label text-slate-700">
-                            Montant {taxMethod.toUpperCase()}
+                            Montant {user?.is_subject_vat ? taxMethod.toUpperCase() : ''}
                         </label>
                         <input
                             type="number"
@@ -426,8 +431,8 @@ export default function ExpenseTable(props) {
                             <th className="px-4 py-4 font-bold text-slate-700">Date</th>
                             <th className="px-4 py-4 font-bold text-slate-700">Catégorie</th>
                             <th className="px-4 py-4 font-bold text-slate-700">Description</th>
-                            <th className="px-4 py-4 font-bold text-slate-700 text-right">Montant HT</th>
-                            <th className="px-4 py-4 font-bold text-slate-700 text-right">TVA</th>
+                            <th className="px-4 py-4 font-bold text-slate-700 text-right">{user?.is_subject_vat ? 'Montant HT' : 'Montant'}</th>
+                            {user?.is_subject_vat && <th className="px-4 py-4 font-bold text-slate-700 text-right">TVA</th>}
                             <th className="px-4 py-4 text-right">Actions</th>
                         </tr>
                     </thead>
@@ -451,10 +456,12 @@ export default function ExpenseTable(props) {
                                         </td>
                                         <td className="px-4 py-3"><input value={editForm.name} onChange={ev => setEditForm({ ...editForm, name: ev.target.value })} className="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-1 px-2" /></td>
                                         <td className="px-4 py-3"><input type="number" step="0.01" value={editForm.amount} onChange={ev => setEditForm({ ...editForm, amount: ev.target.value })} className="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm py-1 px-2 text-right" /></td>
-                                        <td className="px-4 py-3 text-right text-xs text-slate-500">
-                                            {/* VAT is auto-calculated on save, or allow edit? For now read-only or derived */}
-                                            {editForm.vat_amount ? editForm.vat_amount.toFixed(2) + '€' : '-'}
-                                        </td>
+                                        {user?.is_subject_vat && (
+                                            <td className="px-4 py-3 text-right text-xs text-slate-500">
+                                                {/* VAT is auto-calculated on save, or allow edit? For now read-only or derived */}
+                                                {editForm.vat_amount ? editForm.vat_amount.toFixed(2) + '€' : '-'}
+                                            </td>
+                                        )}
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex justify-end gap-1">
                                                 <button className="p-1 w-8 h-8 flex items-center justify-center bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors" onClick={saveEdit}>
@@ -490,9 +497,11 @@ export default function ExpenseTable(props) {
                                     </td>
                                     <td className="px-4 py-3 font-semibold text-slate-900">{e.name}</td>
                                     <td className="px-4 py-3 text-right font-bold text-slate-700">{e.amount.toFixed(2)}€</td>
-                                    <td className="px-4 py-3 text-right text-xs font-medium text-slate-500">
-                                        {e.vat_amount > 0 ? e.vat_amount.toFixed(2) + '€' : '-'}
-                                    </td>
+                                    {user?.is_subject_vat && (
+                                        <td className="px-4 py-3 text-right text-xs font-medium text-slate-500">
+                                            {e.vat_amount > 0 ? e.vat_amount.toFixed(2) + '€' : '-'}
+                                        </td>
+                                    )}
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex justify-end items-center gap-2">
                                             <button onClick={() => startEdit(e)} className="p-1 w-9 h-9 flex items-center justify-center hover:bg-indigo-100 text-indigo-700 rounded-full transition-colors font-bold">
@@ -518,10 +527,12 @@ export default function ExpenseTable(props) {
                         <tfoot className="bg-slate-50 font-extrabold border-t border-slate-600 text-slate-900">
                             <tr>
                                 <td colSpan={3} className="px-4 py-4 text-right text-slate-900 uppercase text-sm tracking-widest font-black">Total</td>
-                                <td className="px-4 py-4 text-right text-red-600 text-lg">{total.toFixed(2)}€</td>
-                                <td className="px-4 py-4 text-right text-slate-500 text-sm">
-                                    {(filteredExpenses.reduce((sum, e) => sum + (e.vat_amount || 0), 0)).toFixed(2)}€
-                                </td>
+                                <td className={`px-4 py-4 text-right text-red-600 text-lg ${!user?.is_subject_vat ? 'pr-8' : ''}`}>{total.toFixed(2)}€</td>
+                                {user?.is_subject_vat && (
+                                    <td className="px-4 py-4 text-right text-slate-500 text-sm">
+                                        {(filteredExpenses.reduce((sum, e) => sum + (e.vat_amount || 0), 0)).toFixed(2)}€
+                                    </td>
+                                )}
                                 <td></td>
                             </tr>
                         </tfoot>

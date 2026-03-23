@@ -79,6 +79,12 @@ export default function IncomeTable(props) {
     useEffect(() => {
         if (user?.is_subject_vat) {
             setVatRate('20');
+            // Auto-enable VAT columns if subject to VAT
+            setVisibleColumns(prev => ({ ...prev, vat: true, deductibleVat: true }));
+        } else {
+            setVatRate('0');
+            // Auto-disable VAT columns if NOT subject to VAT
+            setVisibleColumns(prev => ({ ...prev, vat: false, deductibleVat: false }));
         }
     }, [user?.is_subject_vat]);
 
@@ -283,10 +289,10 @@ export default function IncomeTable(props) {
         name: true,
         platform: true,
         amount: true,
-        vat: true,
+        vat: user?.is_subject_vat || false,
         tjm: true,
         fee: true,
-        deductibleVat: true,
+        deductibleVat: user?.is_subject_vat || false,
         urssaf: true,
         net: true,
         // E-commerce columns

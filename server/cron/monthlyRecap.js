@@ -11,36 +11,33 @@ import { generateMonthlyRecap } from '../services/recapService.js';
 export const initCronJobs = () => {
     console.log("Initializing Cron Jobs...");
 
-    // Run every day at 23:30
-    cron.schedule('30 23 * * *', async () => {
+    // Run every 1st of the month at 00:05
+    cron.schedule('5 0 1 * *', async () => {
+        console.log("It is the 1st of the month. Starting Monthly Recap generation for the PREVIOUS month...");
+
         const now = new Date();
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        const lastMonth = new Date(now);
+        lastMonth.setMonth(now.getMonth() - 1); // Go back one month
 
-        // If tomorrow is the 1st, then today is the last day of the month
-        if (tomorrow.getDate() === 1) {
-            console.log("It is the last day of the month. Starting Monthly Recap generation...");
+        const month = lastMonth.getMonth() + 1; // 1-12
+        const year = lastMonth.getFullYear();
 
-            const month = now.getMonth() + 1; // 1-12
-            const year = now.getFullYear();
+        // Fetch all premium users
+        db.all("SELECT id FROM users WHERE is_premium = 1", async (err, users) => {
+            if (err) {
+                console.error("Error fetching users for Cron:", err);
+                return;
+            }
 
-            // Fetch all premium users
-            db.all("SELECT id FROM users WHERE is_premium = 1", async (err, users) => {
-                if (err) {
-                    console.error("Error fetching users for Cron:", err);
-                    return;
+            console.log(`Found ${users.length} premium users.`);
+            for (const user of users) {
+                try {
+                    await generateMonthlyRecap(user.id, month, year);
+                    console.log(`Generated recap for user ${user.id}`);
+                } catch (e) {
+                    console.error(`Failed to generate recap for user ${user.id}:`, e);
                 }
-
-                console.log(`Found ${users.length} premium users.`);
-                for (const user of users) {
-                    try {
-                        await generateMonthlyRecap(user.id, month, year);
-                        console.log(`Generated recap for user ${user.id}`);
-                    } catch (e) {
-                        console.error(`Failed to generate recap for user ${user.id}:`, e);
-                    }
-                }
-            });
-        }
+            }
+        });
     });
 };
