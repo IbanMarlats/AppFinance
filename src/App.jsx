@@ -172,7 +172,7 @@ function FinanceApp() {
         </button>
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
           <div className="text-center mb-8 flex flex-col items-center">
-            <img src={logoFull} alt="Fiskeo" className="h-12 w-auto mb-2" />
+            <img src={logoFull} alt="Fiskeo" className="h-28 w-auto mb-4" />
             <p className="text-slate-500">Gestion financière simplifiée pour pros</p>
           </div>
           {isReset ? (

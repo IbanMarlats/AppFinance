@@ -57,7 +57,7 @@ export default function Layout({ children, activeTab, onTabChange }) {
                         <img 
                             src={isSidebarOpen ? logoFull : logoIcon} 
                             alt="Fiskeo" 
-                            className={isSidebarOpen ? "h-8" : "h-10 w-10 object-contain"}
+                            className={isSidebarOpen ? "h-16 w-auto object-contain" : "h-14 w-14 object-contain"}
                         />
                     </div>
                 </div>

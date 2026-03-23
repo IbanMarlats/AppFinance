@@ -21,7 +21,7 @@ export const Navbar = ({ onLogin, onRegister }) => (
     <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
       <div className="flex justify-between items-center h-16 gap-2">
         <div className="flex items-center shrink-0">
-          <img src={logoFull} alt="Fiskeo" className="h-10 w-auto" />
+          <img src={logoFull} alt="Fiskeo" className="h-20 w-auto" />
         </div>
         <div className="flex items-center space-x-1 sm:space-x-4 shrink-0">
           <button 
@@ -311,7 +311,7 @@ export const Footer = () => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
         <div className="flex items-center">
-          <img src={logoFull} alt="Fiskeo" className="h-8 w-auto" />
+          <img src={logoFull} alt="Fiskeo" className="h-14 w-auto" />
         </div>
         
         <div className="flex flex-wrap justify-center gap-6 text-sm font-medium text-slate-500">
