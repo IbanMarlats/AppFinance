@@ -15,6 +15,7 @@ import {
   Heart
 } from 'lucide-react';
 import logoFull from '../../assets/logo/logo-full.png';
+import landingHero from '../../assets/images/landing-hero.png';
 
 export const Navbar = ({ onLogin, onRegister }) => (
   <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 overflow-hidden">
@@ -80,17 +81,14 @@ export const Hero = ({ onCtaClick }) => (
       </div>
 
       <div className="grid lg:grid-cols-12 gap-12 items-start">
-        {/* Left Column: Image Placeholder */}
+        {/* Left Column: Hero Image */}
         <div className="lg:col-span-7">
-          <div className="bg-white rounded-3xl shadow-2xl border-4 border-slate-100 p-4 aspect-[4/3] flex flex-col items-center justify-center relative overflow-hidden group">
-            <div className="absolute inset-0 bg-slate-50 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl m-4">
-              <div className="text-center">
-                 <div className="w-16 h-16 bg-slate-200 rounded-2xl mb-4 mx-auto flex items-center justify-center">
-                    <Layers className="w-8 h-8 text-slate-400" />
-                 </div>
-                 <p className="text-slate-400 font-medium">Capture d'écran de l'application</p>
-              </div>
-            </div>
+          <div className="bg-white rounded-3xl shadow-2xl border-4 border-slate-100 p-2 overflow-hidden group">
+            <img 
+              src={landingHero} 
+              alt="Fiskeo Application Dashboard" 
+              className="w-full h-auto rounded-2xl shadow-inner transition-transform duration-700 group-hover:scale-[1.02]"
+            />
           </div>
         </div>
 
