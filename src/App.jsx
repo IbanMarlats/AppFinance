@@ -233,7 +233,6 @@ function FinanceApp() {
             )}
             {tab === 'stats' && <StatsDashboard />}
             {tab === 'goals' && <GoalsDashboard />}
-            {tab === 'goals' && <GoalsDashboard />}
             {tab === 'recap' && <RecapDashboard />}
             {tab === 'profile' && <UserProfile />}
             {tab === 'admin' && user.role === 'admin' && <AdminDashboard />}
