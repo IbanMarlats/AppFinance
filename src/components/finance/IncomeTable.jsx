@@ -1392,7 +1392,7 @@ export default function IncomeTable(props) {
                                 vat: 'TVA',
                                 tjm: 'TJM',
                                 fee: 'Frais (TTC)',
-                                deduction: 'Déduction', // If deduction exists
+                                deductibleVat: 'Déduction',
                                 // E-commerce columns
                                 quantity: 'Qté',
                                 unit_price: 'P.U.',
