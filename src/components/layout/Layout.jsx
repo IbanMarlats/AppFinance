@@ -52,12 +52,12 @@ export default function Layout({ children, activeTab, onTabChange }) {
                 `}
             >
                 {/* Logo Area */}
-                <div className="h-16 flex items-center px-6 border-b border-slate-100">
-                    <div data-tour="app-logo" className="flex items-center gap-3">
+                <div className={`${isSidebarOpen ? 'h-20' : 'h-14'} flex items-center px-4 border-b border-slate-100 overflow-hidden`}>
+                    <div data-tour="app-logo" className="flex items-center gap-3 w-full justify-center">
                         <img 
                             src={isSidebarOpen ? logoFull : logoIcon} 
                             alt="Fiskeo" 
-                            className={isSidebarOpen ? "h-16 w-auto object-contain" : "h-14 w-14 object-contain"}
+                            className={isSidebarOpen ? "h-28 w-auto -my-5 object-contain" : "h-18 w-18 -my-2.5 object-contain"}
                         />
                     </div>
                 </div>

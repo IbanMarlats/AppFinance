@@ -17,11 +17,11 @@ import {
 import logoFull from '../../assets/logo/logo-full.png';
 
 export const Navbar = ({ onLogin, onRegister }) => (
-  <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+  <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 overflow-hidden">
     <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
       <div className="flex justify-between items-center h-16 gap-2">
         <div className="flex items-center shrink-0">
-          <img src={logoFull} alt="Fiskeo" className="h-20 w-auto" />
+          <img src={logoFull} alt="Fiskeo" className="h-28 w-auto -my-6" />
         </div>
         <div className="flex items-center space-x-1 sm:space-x-4 shrink-0">
           <button 
@@ -309,9 +309,9 @@ export const Pricing = ({ onCtaClick }) => {
 export const Footer = () => (
   <footer className="py-12 bg-white border-t border-slate-100 overflow-hidden">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-2 overflow-hidden">
         <div className="flex items-center">
-          <img src={logoFull} alt="Fiskeo" className="h-14 w-auto" />
+          <img src={logoFull} alt="Fiskeo" className="h-24 w-auto -my-3" />
         </div>
         
         <div className="flex flex-wrap justify-center gap-6 text-sm font-medium text-slate-500">

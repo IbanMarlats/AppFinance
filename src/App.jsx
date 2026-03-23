@@ -171,9 +171,9 @@ function FinanceApp() {
           Retour à l'accueil
         </button>
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
-          <div className="text-center mb-8 flex flex-col items-center">
-            <img src={logoFull} alt="Fiskeo" className="h-28 w-auto mb-4" />
-            <p className="text-slate-500">Gestion financière simplifiée pour pros</p>
+          <div className="text-center mb-2 flex flex-col items-center overflow-hidden">
+            <img src={logoFull} alt="Fiskeo" className="h-56 w-auto -my-8" />
+            <p className="text-slate-500 text-lg">Gestion financière simplifiée pour pros</p>
           </div>
           {isReset ? (
             <ForgotPassword onDone={() => { setIsReset(false); setIsLogin(true); navigate('/'); }} />
