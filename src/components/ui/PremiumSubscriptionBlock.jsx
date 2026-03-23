@@ -7,15 +7,10 @@ export default function PremiumSubscriptionBlock() {
     const handleSubscribe = async (planType) => {
         setLoading(planType);
         try {
-            // Hardcoded Price IDs matching PremiumPage.jsx
-            const priceId = planType === 'monthly'
-                ? 'price_1SfMTkCHELpndPIwMCCvS6bF'
-                : 'price_1SfMUBCHELpndPIwEp9X7vXI';
-
             const mode = planType === 'monthly' ? 'subscription' : 'payment';
 
-            const res = await axios.post(`${API_URL}/stripe/create-checkout-session`, {
-                priceId,
+            const res = await axios.post(`${window.API_URL}/stripe/create-checkout-session`, {
+                planType,
                 mode
             }, { withCredentials: true });
 

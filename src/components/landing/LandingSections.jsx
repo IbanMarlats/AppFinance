@@ -325,7 +325,7 @@ export const Footer = () => (
            <span>Un outil créé par un indépendant, pour les indépendants. Build with passion in 2026.</span>
         </div>
         <div className="text-xs text-slate-400">
-          &copy; {new Date().getFullYear()} Fiskeo. Tous droits réservés.
+          &copy; {new Date().getFullYear()} Fiskeo - Iban Marlats. Tous droits réservés.
         </div>
       </div>
     </div>

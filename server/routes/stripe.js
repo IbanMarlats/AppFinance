@@ -12,10 +12,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 router.post('/create-checkout-session', authenticateToken, async (req, res) => {
     try {
-        const { priceId, mode } = req.body; // mode: 'subscription' or 'payment'
+        const { planType, mode } = req.body; // planType: 'monthly' or 'annual', mode: 'subscription' or 'payment'
+
+        const priceId = planType === 'annual' 
+            ? process.env.STRIPE_PRICE_ANNUAL 
+            : process.env.STRIPE_PRICE_MONTHLY;
 
         if (!priceId) {
-            return res.status(400).json({ error: 'Price ID is required' });
+            console.error(`Missing Stripe Price ID for plan: ${planType}. Env variables: ANNUAL=${process.env.STRIPE_PRICE_ANNUAL}, MONTHLY=${process.env.STRIPE_PRICE_MONTHLY}`);
+            return res.status(500).json({ error: 'Configuration Stripe manquante pour ce plan.' });
         }
 
         // Get existing customer ID and trial status
@@ -51,12 +56,12 @@ router.post('/create-checkout-session', authenticateToken, async (req, res) => {
                 },
             ],
             mode: mode || 'subscription',
-            success_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/cancel`,
+            success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/cancel`,
             client_reference_id: req.user.id,
             metadata: {
                 userId: req.user.id,
-                planType: priceId === process.env.STRIPE_PRICE_MONTHLY ? 'monthly' : 'annual'
+                planType: planType
             },
         };
 
@@ -65,9 +70,6 @@ router.post('/create-checkout-session', authenticateToken, async (req, res) => {
         }
 
         if (mode === 'subscription') {
-            // Check if user is eligible for trial
-            // Legacy check: if they have a trial_until date in the past or future, they used a trial.
-            // New check: has_used_trial flag.
             const hasUsedTrial = user?.has_used_trial === 1 || user?.trial_until !== null;
 
             if (!hasUsedTrial) {
@@ -75,9 +77,6 @@ router.post('/create-checkout-session', authenticateToken, async (req, res) => {
                     trial_period_days: 14
                 };
             }
-            sessionConfig.metadata.planType = priceId === process.env.STRIPE_PRICE_MONTHLY ? 'monthly' : 'annual';
-        } else {
-            sessionConfig.metadata.planType = 'lifetime';
         }
 
         const session = await stripe.checkout.sessions.create(sessionConfig);
