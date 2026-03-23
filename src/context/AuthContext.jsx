@@ -34,12 +34,21 @@ export function AuthProvider({ children }) {
             const res = await axios.get(`${API_URL}/auth/me`);
             setUser(res.data);
         } catch (err) {
-            console.error("Auth check failed:", err.message);
+            console.error("[AUTH] Status check failed:", err.response?.status, err.message);
+            
+            // Only clear session if it's a definitive 401 or 403. 
+            // 401: Unauthorized (Token missing/expired)
+            // 403: Forbidden (Token invalid/decryption failed)
             if (err.response?.status === 401 || err.response?.status === 403) {
+                console.warn("[AUTH] Invalid session. Clearing local tokens.");
                 localStorage.removeItem('fiskeo_token');
                 delete axios.defaults.headers.common['Authorization'];
+                setUser(null);
+            } else {
+                // For other errors (500, network), keep user if we have one or just set null if no token.
+                // If we have a token but server is down, don't force logout yet (let components handle retry or error state).
+                if (!token) setUser(null);
             }
-            setUser(null);
         } finally {
             setLoading(false);
         }

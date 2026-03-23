@@ -27,7 +27,7 @@ export default function FiscalSummary({ year }) {
     const RATES = {
         vente: { ...getRate('vente', 12.3, 0.1), lib: 1.0, label: 'Vente' },
         bic: { ...getRate('bic', 21.2, 0.2), lib: 1.7, label: 'Prestations BIC' },
-        bnc: { ...getRate('bnc', 24.6, 0.2), lib: 2.2, label: 'Prestations BNC' }
+        bnc: { ...getRate('bnc', 22.9, 0.2), lib: 2.2, label: 'Prestations BNC' }
     };
 
 

@@ -44,7 +44,14 @@ export default function AdminDashboard() {
     }, [settings]);
 
     useEffect(() => {
+        if (settings && Object.keys(settings).length > 0) {
+            setLocalSettings(settings);
+        }
+    }, [settings]);
+
+    useEffect(() => {
         const fetchStats = async () => {
+            setLoading(true);
             try {
                 const res = await axios.get(`${API_URL}/admin/stats`);
                 setStats(res.data);
@@ -300,20 +307,20 @@ export default function AdminDashboard() {
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Configuration Globale</h3>
 
-                <h4 className="text-sm font-semibold text-slate-500 uppercase mb-3">Seuils & Plafonds (€)</h4>
+                <h4 className="text-sm font-semibold text-slate-500 uppercase mb-3 text-left">Seuils & Plafonds (€)</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <div>
-                        <label className="label text-xs">Seuil TVA (Service)</label>
+                        <label className="label text-xs text-left">Seuil TVA (Service)</label>
                         <input
                             type="number"
-                            value={localSettings.tva_threshold_service || ''}
-                            onChange={e => handleSettingsChange('tva_threshold_service', e.target.value)} // Legacy/Fallback needed?
+                            value={localSettings.tva_threshold || ''}
+                            onChange={e => handleSettingsChange('tva_threshold', e.target.value)}
                             placeholder="ex: 37500"
                             className="input"
                         />
                     </div>
                     <div>
-                        <label className="label text-xs">Seuil TVA (Vente)</label>
+                        <label className="label text-xs text-left">Seuil TVA (Vente)</label>
                         <input
                             type="number"
                             value={localSettings.tva_threshold_sell || ''}
@@ -323,17 +330,17 @@ export default function AdminDashboard() {
                         />
                     </div>
                     <div>
-                        <label className="label text-xs">Plafond Micro (Service)</label>
+                        <label className="label text-xs text-left">Plafond Micro (Service)</label>
                         <input
                             type="number"
-                            value={localSettings.micro_threshold_service || ''}
-                            onChange={e => handleSettingsChange('micro_threshold_service', e.target.value)}
+                            value={localSettings.micro_threshold || ''}
+                            onChange={e => handleSettingsChange('micro_threshold', e.target.value)}
                             placeholder="ex: 77700"
                             className="input"
                         />
                     </div>
                     <div>
-                        <label className="label text-xs">Plafond Micro (Vente)</label>
+                        <label className="label text-xs text-left">Plafond Micro (Vente)</label>
                         <input
                             type="number"
                             value={localSettings.micro_threshold_sell || ''}
@@ -344,37 +351,37 @@ export default function AdminDashboard() {
                     </div>
                 </div>
 
-                <h4 className="text-sm font-semibold text-slate-500 uppercase mb-3">Cotisations URSSAF (%)</h4>
+                <h4 className="text-sm font-semibold text-slate-500 uppercase mb-3 text-left">Cotisations URSSAF (%)</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div>
-                        <label className="label text-xs">URSSAF (BNC - Libéral)</label>
+                        <label className="label text-xs text-left">URSSAF (BNC - Libéral)</label>
                         <input
                             type="number"
                             step="0.1"
-                            value={localSettings.urssaf_service_bnc || ''}
-                            onChange={e => handleSettingsChange('urssaf_service_bnc', e.target.value)}
-                            placeholder="ex: 26.1"
+                            value={localSettings.urssaf_freelance_bnc || ''}
+                            onChange={e => handleSettingsChange('urssaf_freelance_bnc', e.target.value)}
+                            placeholder="ex: 23.1"
                             className="input"
                         />
                     </div>
                     <div>
-                        <label className="label text-xs">URSSAF (BIC - Commercial)</label>
+                        <label className="label text-xs text-left">URSSAF (BIC - Commercial)</label>
                         <input
                             type="number"
                             step="0.1"
-                            value={localSettings.urssaf_service_bic || ''}
-                            onChange={e => handleSettingsChange('urssaf_service_bic', e.target.value)}
+                            value={localSettings.urssaf_freelance_bic || ''}
+                            onChange={e => handleSettingsChange('urssaf_freelance_bic', e.target.value)}
                             placeholder="ex: 21.2"
                             className="input"
                         />
                     </div>
                     <div>
-                        <label className="label text-xs">URSSAF (Vente / E-commerce)</label>
+                        <label className="label text-xs text-left">URSSAF (Vente / E-commerce)</label>
                         <input
                             type="number"
                             step="0.1"
-                            value={localSettings.urssaf_sell || ''}
-                            onChange={e => handleSettingsChange('urssaf_sell', e.target.value)}
+                            value={localSettings.urssaf_ecommerce || ''}
+                            onChange={e => handleSettingsChange('urssaf_ecommerce', e.target.value)}
                             placeholder="ex: 12.3"
                             className="input"
                         />

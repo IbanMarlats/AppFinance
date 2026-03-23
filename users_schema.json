@@ -1,0 +1,194 @@
+[
+  {
+    "cid": 0,
+    "name": "id",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 1
+  },
+  {
+    "cid": 1,
+    "name": "email_encrypted",
+    "type": "TEXT",
+    "notnull": 1,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 2,
+    "name": "email_hash",
+    "type": "TEXT",
+    "notnull": 1,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 3,
+    "name": "password_hash",
+    "type": "TEXT",
+    "notnull": 1,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 4,
+    "name": "is_verified",
+    "type": "BOOLEAN",
+    "notnull": 0,
+    "dflt_value": "0",
+    "pk": 0
+  },
+  {
+    "cid": 5,
+    "name": "verification_token",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 6,
+    "name": "role",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": "'freelance'",
+    "pk": 0
+  },
+  {
+    "cid": 7,
+    "name": "is_premium",
+    "type": "BOOLEAN",
+    "notnull": 0,
+    "dflt_value": "0",
+    "pk": 0
+  },
+  {
+    "cid": 8,
+    "name": "last_login",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 9,
+    "name": "created_at",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 10,
+    "name": "newsletter",
+    "type": "BOOLEAN",
+    "notnull": 0,
+    "dflt_value": "1",
+    "pk": 0
+  },
+  {
+    "cid": 11,
+    "name": "subscription_plan",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 12,
+    "name": "subscription_status",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 13,
+    "name": "premium_until",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 14,
+    "name": "reset_password_token",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 15,
+    "name": "reset_password_expires",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 16,
+    "name": "trial_until",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 17,
+    "name": "subscription_started_at",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 18,
+    "name": "is_gift",
+    "type": "BOOLEAN",
+    "notnull": 0,
+    "dflt_value": "0",
+    "pk": 0
+  },
+  {
+    "cid": 19,
+    "name": "is_subject_vat",
+    "type": "BOOLEAN",
+    "notnull": 0,
+    "dflt_value": "0",
+    "pk": 0
+  },
+  {
+    "cid": 20,
+    "name": "vat_start_date",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 21,
+    "name": "stripe_customer_id",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": null,
+    "pk": 0
+  },
+  {
+    "cid": 22,
+    "name": "has_used_trial",
+    "type": "BOOLEAN",
+    "notnull": 0,
+    "dflt_value": "0",
+    "pk": 0
+  },
+  {
+    "cid": 23,
+    "name": "declaration_frequency",
+    "type": "TEXT",
+    "notnull": 0,
+    "dflt_value": "'monthly'",
+    "pk": 0
+  }
+]

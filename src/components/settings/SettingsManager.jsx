@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
+import { useAuth, API_URL } from '../../context/AuthContext';
 import { Building2, Percent, Euro, Save, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 export default function SettingsManager() {

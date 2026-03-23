@@ -30,15 +30,23 @@ export const checkSubscriptions = async () => {
                 const now = new Date();
 
                 // 1. Check Manual Overrides first
-                if (user.subscription_plan === 'lifetime' || user.is_gift === 1) {
+                const isGift = user.is_gift === 1 || user.is_gift === true || String(user.is_gift) === "1";
+                const isLifetime = user.subscription_plan === 'lifetime' || user.subscription_plan === 'gift_lifetime' || user.subscription_plan === 'gift';
+
+                console.log(`[SUBS] Checking user ${user.id}: isGift=${isGift} (${user.is_gift}), isLifetime=${isLifetime} (${user.subscription_plan}), premiumUntil=${user.premium_until}`);
+
+                if (isLifetime || isGift) {
                     shouldBePremium = true;
+                    console.log(`[SUBS] User ${user.id} matched manual override (Gift/Lifetime). PROTECTED.`);
                 } 
                 // 2. Check manual expiry / trial dates
                 else if (user.premium_until && new Date(user.premium_until) > now) {
                     shouldBePremium = true;
+                    console.log(`[SUBS] User ${user.id} matched manual duration (Premium Until: ${user.premium_until}).`);
                 }
                 else if (user.trial_until && new Date(user.trial_until) > now) {
                     shouldBePremium = true;
+                    console.log(`[SUBS] User ${user.id} matched trial duration (Trial Until: ${user.trial_until}).`);
                 }
                 // 3. Check Stripe if customer ID exists (and no manual override found)
                 else if (user.stripe_customer_id) {
@@ -56,19 +64,19 @@ export const checkSubscriptions = async () => {
                         if (activeSub) {
                             shouldBePremium = true;
                         } else {
-                            console.log(`User ${user.id}: No active Stripe subscription found.`);
+                            console.log(`[SUBS] User ${user.id}: No active Stripe subscription found (Status: ${subscriptions.data[0]?.status || 'none'}).`);
                         }
                     } catch (stripeErr) {
-                        console.error(`Stripe error for user ${user.id}:`, stripeErr.message);
+                        console.error(`[SUBS] Stripe error for user ${user.id}:`, stripeErr.message);
                         // Safely keep premium if Stripe is unreachable to avoid accidental lock-outs
                         shouldBePremium = true;
                     }
                 } else {
-                    console.log(`User ${user.id}: No Stripe ID and all manual plans expired.`);
+                    console.log(`[SUBS] User ${user.id}: No Stripe ID and all manual plans expired. (Premium Until: ${user.premium_until || 'N/A'})`);
                 }
 
                 if (!shouldBePremium) {
-                    console.log(`📉 Downgrading user ${user.id} to Free.`);
+                    console.log(`📉 [SUBS] Downgrading user ${user.id} to Free.`);
 
                     await new Promise((resolve, reject) => {
                         db.run(
@@ -77,6 +85,8 @@ export const checkSubscriptions = async () => {
                             (err) => err ? reject(err) : resolve()
                         );
                     });
+                } else {
+                    console.log(`✨ [SUBS] User ${user.id} remains Premium.`);
                 }
 
             } catch (error) {

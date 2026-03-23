@@ -173,19 +173,24 @@ export default function StatsDashboard() {
 
         // Effective Fee
         const effectiveFee = user?.is_subject_vat ? feeHT : feeTotal;
-
         // URSSAF
-        const uRate = user?.role === 'ecommerce' ? (settings.urssaf_ecommerce || 12.3) : (settings.urssaf_freelance || 23.1); // Default to 23.1 not 25
-        // Ideally we check tax_category too like IncomeTable but this is a dashboard summary.
-        // Let's copy basic logic or simplistic one? Simplistic for now or better, use inc.tax_category.
-
-        let urssafRate = uRate / 100;
-        if (!user?.role || user?.role === 'freelance') {
+        let urssafRate = 0;
+        const role = user?.role || 'freelance_bnc';
+        
+        if (role === 'ecommerce') {
+            urssafRate = (parseFloat(settings.urssaf_ecommerce) || 12.3) / 100;
+        } else if (role === 'freelance_bic') {
+            urssafRate = (parseFloat(settings.urssaf_freelance_bic) || 21.2) / 100;
+        } else if (role === 'freelance_bnc') {
+            urssafRate = (parseFloat(settings.urssaf_freelance_bnc) || 23.1) / 100;
+        } else {
+            // Generic freelance or unknown role
             const type = inc.tax_category || 'bnc';
-            if (type === 'bic') urssafRate = (settings.urssaf_freelance_bic || 21.2) / 100;
-            else if (type === 'vente') urssafRate = (settings.urssaf_ecommerce || 12.3) / 100;
-            else urssafRate = (settings.urssaf_freelance_bnc || 23.1) / 100;
+            if (type === 'bic') urssafRate = (parseFloat(settings.urssaf_freelance_bic) || 21.2) / 100;
+            else if (type === 'vente') urssafRate = (parseFloat(settings.urssaf_ecommerce) || 12.3) / 100;
+            else urssafRate = (parseFloat(settings.urssaf_freelance_bnc) || 23.1) / 100;
         }
+
 
         const urssaf = gross * urssafRate;
 

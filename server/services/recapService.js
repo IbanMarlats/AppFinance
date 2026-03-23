@@ -44,7 +44,16 @@ export const generateMonthlyRecap = async (userId, month, year) => {
             userEmail = user.email_encrypted; // fallback
         }
 
-        // 3. Financial Stats
+        // 3. Fetch Settings (Global + User Overrides)
+        const globalSettingsRows = await query("SELECT key, value FROM settings");
+        const globalSettings = globalSettingsRows.reduce((acc, row) => ({ ...acc, [row.key]: row.value }), {});
+
+        const userSettingsRows = await query("SELECT key, value FROM user_settings WHERE user_id = ?", [userId]);
+        const userSettings = userSettingsRows.reduce((acc, row) => ({ ...acc, [row.key]: row.value }), {});
+
+        const settings = { ...globalSettings, ...userSettings };
+
+        // 4. Financial Stats
 
         // CA Brut (Total Income)
         const incomes = await query(`
@@ -65,9 +74,10 @@ export const generateMonthlyRecap = async (userId, month, year) => {
 
         // URSSAF Estimate
         let socialRate = 0.22; // Default ~22%
-        if (user.role === 'freelance_bic') socialRate = 0.212;
-        if (user.role === 'freelance_bnc') socialRate = 0.231;
-        if (user.role === 'ecommerce') socialRate = 0.123;
+        if (user.role === 'freelance_bic') socialRate = (parseFloat(settings.urssaf_freelance_bic) || 21.2) / 100;
+        else if (user.role === 'freelance_bnc') socialRate = (parseFloat(settings.urssaf_freelance_bnc) || 23.1) / 100;
+        else if (user.role === 'ecommerce') socialRate = (parseFloat(settings.urssaf_ecommerce) || 12.3) / 100;
+        else socialRate = (parseFloat(settings.urssaf_freelance) || 25) / 100;
 
         const estimatedUrssaf = totalIncome * socialRate;
 

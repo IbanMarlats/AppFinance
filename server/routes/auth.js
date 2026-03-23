@@ -15,6 +15,12 @@ const router = express.Router();
 // Temporary debug route
 router.get('/debug-cookies', (req, res) => {
     const hash = crypto.createHash('md5').update(SECRET_KEY || '').digest('hex');
+    const isDefaultKey = SECRET_KEY === 'stable_secret_key_fixed_for_dev_mode';
+    
+    if (isDefaultKey) {
+        console.warn("[AUTH] Warning: Running with default fallback SECRET_KEY. Sessions will be unstable if this was not intentional.");
+    }
+
     res.json({
         cookies: req.cookies,
         signedCookies: req.signedCookies,
@@ -22,7 +28,8 @@ router.get('/debug-cookies', (req, res) => {
         env: process.env.NODE_ENV,
         secure: req.secure,
         SECRET_KEY_HASH_MD5: hash,
-        SECRET_KEY_SOURCE: process.env.SECRET_KEY ? 'Environment' : 'Fallback (Default)'
+        SECRET_KEY_SOURCE: process.env.SECRET_KEY ? 'Environment' : 'Fallback (Default)',
+        is_default_key: isDefaultKey
     });
 });
 router.post('/register', async (req, res) => {
@@ -264,12 +271,15 @@ router.get('/me', authenticateToken, (req, res) => {
                 declaration_frequency: row.declaration_frequency
             });
         } catch (e) {
-            console.error("Decryption failed for user " + req.user.id + ":", e.message);
-            logEvent('AUTH_ME_ERROR', `Decryption failed for user: ${req.user.id}. Error: ${e.message}`, req.user.id, req);
-            // If we can't decrypt, the data is likely invalid/key changed. 
-            // Force logout to avoid infinite 500 loop on frontend.
+            console.error(`[AUTH] Decryption failed for user ${req.user.id}. This usually means the SECRET_KEY has changed. Error: ${e.message}`);
+            logEvent('AUTH_ME_ERROR', `Decryption failed for user: ${req.user.id}. Key mismatch suspected.`, req.user.id, req);
+            
+            // Still return basic info if possible or force logout if critical
             res.clearCookie('token');
-            res.status(401).json({ error: "Session invalid (Decryption failed)" });
+            res.status(401).json({ 
+                error: "Session invalid (Decryption failed)", 
+                message: "Votre session a expiré ou la clé de sécurité a été modifiée. Veuillez vous reconnecter." 
+            });
         }
     });
 });

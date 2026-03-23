@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, API_URL } from '../../context/AuthContext';
 
 export default function UnverifiedBanner() {
     const { user } = useAuth();
