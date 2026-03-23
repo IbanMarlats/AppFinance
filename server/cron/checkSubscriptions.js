@@ -11,7 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export const checkSubscriptions = async () => {
     console.log('🔄 Checking subscription status with Stripe...');
 
-    db.all("SELECT id, email_encrypted, stripe_customer_id, trial_until FROM users WHERE is_premium = 1", async (err, users) => {
+    db.all("SELECT id, email_encrypted, stripe_customer_id, trial_until, subscription_plan, premium_until, is_gift FROM users WHERE is_premium = 1", async (err, users) => {
         if (err) {
             console.error('❌ Error fetching users:', err);
             return;
@@ -27,47 +27,44 @@ export const checkSubscriptions = async () => {
         for (const user of users) {
             try {
                 let shouldBePremium = false;
+                const now = new Date();
 
-                // 1. Check Stripe if customer ID exists
-                if (user.stripe_customer_id) {
+                // 1. Check Manual Overrides first
+                if (user.subscription_plan === 'lifetime' || user.is_gift === 1) {
+                    shouldBePremium = true;
+                } 
+                // 2. Check manual expiry / trial dates
+                else if (user.premium_until && new Date(user.premium_until) > now) {
+                    shouldBePremium = true;
+                }
+                else if (user.trial_until && new Date(user.trial_until) > now) {
+                    shouldBePremium = true;
+                }
+                // 3. Check Stripe if customer ID exists (and no manual override found)
+                else if (user.stripe_customer_id) {
                     try {
                         const subscriptions = await stripe.subscriptions.list({
                             customer: user.stripe_customer_id,
-                            status: 'all', // Fetch all to see what's going on
+                            status: 'all', 
                             limit: 3
                         });
 
-                        // We consider the user premium if they have at least one subscription that is:
-                        // - active (paid)
-                        // - trialing
-                        // - past_due (grace period, usually give access)
                         const activeSub = subscriptions.data.find(sub =>
                             ['active', 'trialing', 'past_due'].includes(sub.status)
                         );
 
                         if (activeSub) {
                             shouldBePremium = true;
-                            // Optionally update expiry if we wanted to sync trial_until, but simplified logic first
                         } else {
                             console.log(`User ${user.id}: No active Stripe subscription found.`);
                         }
                     } catch (stripeErr) {
                         console.error(`Stripe error for user ${user.id}:`, stripeErr.message);
-                        // If stripe error (e.g. invalid customer ID), strict safety might stay premium, 
-                        // but usually invalid ID means no sub. Let's assume keep premium to safely avoid accidental cut-off on network error?
-                        // Re-reading user issue: "le compte admin était en test...".
-                        // If invalid ID, it's safer to downgrade IF we trust the local DB is messy.
-                        // But let's keep current state if Stripe errors to avoid nuking users during downtime.
+                        // Safely keep premium if Stripe is unreachable to avoid accidental lock-outs
                         shouldBePremium = true;
                     }
                 } else {
-                    // No stripe ID? Check manual trial date
-                    // If trial_until is valid and in the future
-                    if (user.trial_until && new Date(user.trial_until) > new Date()) {
-                        shouldBePremium = true;
-                    } else {
-                        console.log(`User ${user.id}: No Stripe ID and trial expired.`);
-                    }
+                    console.log(`User ${user.id}: No Stripe ID and all manual plans expired.`);
                 }
 
                 if (!shouldBePremium) {
