@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /payment/
+Disallow: /success
+Disallow: /cancel
+
+Sitemap: https://fiskeo.vercel.app/sitemap.xml
