@@ -27,34 +27,42 @@ export const checkSubscriptions = async () => {
         for (const user of users) {
             try {
                 let shouldBePremium = false;
+                let reason = 'expired/invalid';
                 const now = new Date();
 
-                // 1. Check Manual Overrides first
+                // 1. Basic flags
                 const isGift = user.is_gift === 1 || user.is_gift === true || String(user.is_gift) === "1";
                 const isLifetime = user.subscription_plan === 'lifetime' || user.subscription_plan === 'gift_lifetime' || user.subscription_plan === 'gift';
 
-                console.log(`[SUBS] Checking user ${user.id}: isGift=${isGift} (${user.is_gift}), isLifetime=${isLifetime} (${user.subscription_plan}), premiumUntil=${user.premium_until}`);
-
-                if (isLifetime || isGift) {
+                // 2. Evaluation Logic (Ordered by precedence)
+                
+                // A. Lifetime is absolute protection
+                if (isLifetime) {
                     shouldBePremium = true;
-                    console.log(`[SUBS] User ${user.id} matched manual override (Gift/Lifetime). PROTECTED.`);
+                    reason = 'lifetime_plan';
                 } 
-                // 2. Check manual expiry / trial dates
+                // B. Gift flag is generally absolute protection (legacy/manual)
+                else if (isGift) {
+                    shouldBePremium = true;
+                    reason = 'gift_flag';
+                }
+                // C. Manual expiry date (Primary manual override)
                 else if (user.premium_until && new Date(user.premium_until) > now) {
                     shouldBePremium = true;
-                    console.log(`[SUBS] User ${user.id} matched manual duration (Premium Until: ${user.premium_until}).`);
+                    reason = `manual_expiry_future (${user.premium_until})`;
                 }
+                // D. Trial period
                 else if (user.trial_until && new Date(user.trial_until) > now) {
                     shouldBePremium = true;
-                    console.log(`[SUBS] User ${user.id} matched trial duration (Trial Until: ${user.trial_until}).`);
+                    reason = `active_trial (${user.trial_until})`;
                 }
-                // 3. Check Stripe if customer ID exists (and no manual override found)
+                // E. Stripe Check (Last resort for payment-based plans)
                 else if (user.stripe_customer_id) {
                     try {
                         const subscriptions = await stripe.subscriptions.list({
                             customer: user.stripe_customer_id,
                             status: 'all', 
-                            limit: 3
+                            limit: 5 // Check more to be safe
                         });
 
                         const activeSub = subscriptions.data.find(sub =>
@@ -63,20 +71,20 @@ export const checkSubscriptions = async () => {
 
                         if (activeSub) {
                             shouldBePremium = true;
+                            reason = `stripe_active (${activeSub.status})`;
                         } else {
-                            console.log(`[SUBS] User ${user.id}: No active Stripe subscription found (Status: ${subscriptions.data[0]?.status || 'none'}).`);
+                            reason = `stripe_inactive (${subscriptions.data[0]?.status || 'none'})`;
                         }
                     } catch (stripeErr) {
                         console.error(`[SUBS] Stripe error for user ${user.id}:`, stripeErr.message);
                         // Safely keep premium if Stripe is unreachable to avoid accidental lock-outs
                         shouldBePremium = true;
+                        reason = 'stripe_error_fallback';
                     }
-                } else {
-                    console.log(`[SUBS] User ${user.id}: No Stripe ID and all manual plans expired. (Premium Until: ${user.premium_until || 'N/A'})`);
                 }
 
                 if (!shouldBePremium) {
-                    console.log(`📉 [SUBS] Downgrading user ${user.id} to Free.`);
+                    console.log(`📉 [SUBS] Downgrading user ${user.id} to Free. Reason: ${reason}`);
 
                     await new Promise((resolve, reject) => {
                         db.run(
@@ -86,7 +94,7 @@ export const checkSubscriptions = async () => {
                         );
                     });
                 } else {
-                    console.log(`✨ [SUBS] User ${user.id} remains Premium.`);
+                    console.log(`✨ [SUBS] User ${user.id} remains Premium. Reason: ${reason}`);
                 }
 
             } catch (error) {

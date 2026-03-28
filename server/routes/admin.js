@@ -233,7 +233,7 @@ router.post('/users', (req, res) => {
     if (sort === 'login') orderBy = "last_login DESC";
 
     const sql = `
-        SELECT id, email_encrypted, role, is_premium, last_login, created_at, is_verified, trial_until, subscription_plan
+        SELECT id, email_encrypted, role, is_premium, last_login, created_at, is_verified, trial_until, subscription_plan, premium_until, is_gift
         FROM users
         ${whereClause}
         ORDER BY ${orderBy}
@@ -295,16 +295,16 @@ router.put('/user/:id/subscription', (req, res) => {
     // Cancel: 'none'
 
     // Fetch existing data to preserve data if needed
-    db.get("SELECT trial_until, subscription_started_at FROM users WHERE id = ?", [id], (err, row) => {
+    db.get("SELECT is_premium, is_gift, subscription_plan, premium_until, trial_until, subscription_started_at FROM users WHERE id = ?", [id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row) return res.status(404).json({ error: 'User not found' });
 
-        let is_premium = 0;
-        let subscription_plan = null;
-        let premium_until = null;
+        let is_premium = row.is_premium; // Preserve current status as fallback
+        let subscription_plan = row.subscription_plan;
+        let premium_until = row.premium_until;
         let trial_until = row.trial_until; // Preserve trial history by default
         let subscription_started_at = row.subscription_started_at;
-        let is_gift = 0; // Default off
+        let is_gift = row.is_gift || 0; // Preserve gift status by default
 
         const now = new Date();
 

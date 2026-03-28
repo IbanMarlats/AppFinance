@@ -211,15 +211,16 @@ export default function AdminDashboard() {
                                 <th className="px-4 py-3 font-semibold">Email</th>
                                 <th className="px-4 py-3 font-semibold">Rôle</th>
                                 <th className="px-4 py-3 font-semibold">Statut</th>
+                                <th className="px-4 py-3 font-semibold">Expire le</th>
                                 <th className="px-4 py-3 font-semibold">Connexion</th>
                                 <th className="px-4 py-3 font-semibold text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {userLoading ? (
-                                <tr><td colSpan="5" className="p-8 text-center text-slate-500">Chargement...</td></tr>
+                                <tr><td colSpan="6" className="p-8 text-center text-slate-500">Chargement...</td></tr>
                             ) : users.length === 0 ? (
-                                <tr><td colSpan="5" className="p-8 text-center text-slate-500">Aucun utilisateur trouvé</td></tr>
+                                <tr><td colSpan="6" className="p-8 text-center text-slate-500">Aucun utilisateur trouvé</td></tr>
                             ) : (
                                 users.map(u => (
                                     <tr key={u.id} className="hover:bg-slate-50">
@@ -233,11 +234,11 @@ export default function AdminDashboard() {
                                             <div className="flex items-center gap-2">
                                                 {u.subscription_plan === 'lifetime' ? (
                                                     <span className="text-xs font-bold text-purple-600 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded flex items-center gap-1">
-                                                        ∞ À Vie
+                                                        ∞ À Vie {u.is_gift ? '🎁' : ''}
                                                     </span>
                                                 ) : u.is_gift ? (
                                                     <span className="text-xs font-bold text-pink-600 bg-pink-50 border border-pink-200 px-2 py-0.5 rounded flex items-center gap-1">
-                                                        🎁 Offert ({u.subscription_plan === 'monthly' ? '1M' : u.subscription_plan === 'annual' ? '1A' : 'Vie'})
+                                                        🎁 Offert ({u.subscription_plan === 'monthly' ? '1M' : u.subscription_plan === 'annual' ? '1A' : '?'})
                                                     </span>
                                                 ) : u.subscription_plan === 'trial' ? (
                                                     <span className="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
@@ -251,6 +252,9 @@ export default function AdminDashboard() {
                                                     <span className="text-xs text-slate-400">Standard</span>
                                                 )}
                                             </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-slate-500 text-xs">
+                                            {u.premium_until ? new Date(u.premium_until).toLocaleDateString() : u.subscription_plan === 'lifetime' ? '∞' : '-'}
                                         </td>
                                         <td className="px-4 py-3 text-slate-500 text-xs">
                                             {u.last_login ? new Date(u.last_login).toLocaleDateString() : '-'}
@@ -388,8 +392,6 @@ export default function AdminDashboard() {
                     </div>
                 </div>
 
-
-
                 <h4 className="text-sm font-semibold text-slate-500 uppercase mb-3">Signature des Emails</h4>
                 <div className="mb-6">
                     <label className="label text-xs">Signature par défaut</label>
@@ -407,8 +409,6 @@ export default function AdminDashboard() {
                 </button>
             </div>
 
-
-            {/* Newsletter Sending Section */}
             {/* Newsletter Sending Section */}
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Envoyer une Newsletter</h3>
@@ -448,7 +448,7 @@ export default function AdminDashboard() {
                         {newsletterSending ? 'Envoi en cours...' : 'Envoyer la Newsletter'}
                     </button>
                 </div>
-            </div >
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {/* Total Users */}
@@ -545,17 +545,10 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* Admin Logs moved to separate tab */}
-
             {/* MRR Chart and History */}
             <h3 className="text-lg font-bold text-slate-800 mb-4 mt-8">Évolution du Revenu (MRR)</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                 <div className="md:col-span-2">
-                    {/* Reuse RevenueChart but adapt data structure if necessary. 
-                        RevenueChart expects { 'YYYY-MM': { income: X } } or we can modify it.
-                        Actually, existing RevenueChart takes 'data' object. 
-                        Let's transform mrrHistory array to that object format.
-                    */}
                     <RevenueChart
                         customData={(stats.mrrHistory || []).map(h => h.value)}
                         customLabels={(stats.mrrHistory || []).map(h => new Date(h.month + '-01').toLocaleDateString('fr-FR', { month: 'short' }))}
@@ -575,9 +568,6 @@ export default function AdminDashboard() {
                                 <tr><td colSpan="3" className="px-4 py-3 text-center text-slate-500">Aucune donnée</td></tr>
                             ) : (
                                 [...stats.mrrHistory].reverse().map((stat, index) => {
-                                    // Calculate growth from previous month (logic tricky in reverse loop, better use original index)
-                                    // previous month is actually index+1 in reversed array (older)
-                                    // Wait, simple calculation:
                                     const prevVal = index < stats.mrrHistory.length - 1 ? stats.mrrHistory[stats.mrrHistory.length - 1 - (index + 1)].value : stat.value;
                                     const growth = stat.value - prevVal;
                                     const growthPct = prevVal > 0 ? (growth / prevVal) * 100 : 0;
@@ -669,6 +659,6 @@ export default function AdminDashboard() {
                     </tbody>
                 </table>
             </div>
-        </div >
+        </div>
     );
 }

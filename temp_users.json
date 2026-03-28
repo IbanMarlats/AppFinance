@@ -1,0 +1,10 @@
+[
+  {
+    "id": "e44fc389-2f25-417c-9e4c-46ca9deb4bea",
+    "is_premium": 1,
+    "subscription_plan": "gift_lifetime",
+    "premium_until": "2036-01-01T00:00:00.000Z",
+    "is_gift": 1,
+    "stripe_customer_id": "cus_TcdDgNsZpWNGfb"
+  }
+]
