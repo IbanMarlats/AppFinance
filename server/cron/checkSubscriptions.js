@@ -43,22 +43,22 @@ export const checkSubscriptions = async () => {
                 // A. Lifetime is absolute protection
                 if (isLifetime) {
                     shouldBePremium = true;
-                    reason = 'lifetime_plan';
+                    reason = `lifetime_plan (${user.subscription_plan})`;
                 } 
                 // B. Gift flag is absolute protection
                 else if (isGift) {
                     shouldBePremium = true;
-                    reason = 'gift_flag';
+                    reason = 'gift_flag_active';
                 }
                 // C. Manual expiry date (Primary manual override)
                 else if (user.premium_until && new Date(user.premium_until) > now) {
                     shouldBePremium = true;
-                    reason = `manual_expiry_future (${user.premium_until})`;
+                    reason = `manual_extension_active (until ${user.premium_until})`;
                 }
                 // D. Trial period
                 else if (user.trial_until && new Date(user.trial_until) > now) {
                     shouldBePremium = true;
-                    reason = `active_trial (${user.trial_until})`;
+                    reason = `active_trial (until ${user.trial_until})`;
                 }
                 // E. Stripe Check (Last resort for payment-based plans)
                 else if (user.stripe_customer_id) {
@@ -77,28 +77,28 @@ export const checkSubscriptions = async () => {
                             shouldBePremium = true;
                             reason = `stripe_active (${activeSub.status})`;
                         } else {
-                            // If user was NOT a gift and NOT manually extended, and Stripe says inactive...
-                            if (user.subscription_plan === 'annual') {
-                                // Annual plans are often one-off payments (mode: payment)
-                                // We keep them premium and rely on the premium_until date (which we now set in stripe.js)
-                                // If premium_until is missing (legacy), we err on the side of caution.
+                            // EXTRA SAFETY: Even if Stripe says inactive, if they have an 'annual' plan string 
+                            // we might want to respect it if it was recent, but premium_until (check C) 
+                            // should have caught it if it was a manual grant.
+                            // If they are purely Stripe-managed and Stripe says inactive...
+                            if (user.subscription_plan === 'annual' || user.subscription_plan === 'lifetime') {
                                 shouldBePremium = true;
-                                reason = 'stripe_annual_payment_assumed_active';
+                                reason = `stripe_inactive_but_protected_plan (${user.subscription_plan})`;
                             } else {
                                 shouldBePremium = false; 
-                                reason = `stripe_inactive (${subscriptions.data[0]?.status || 'none'})`;
+                                reason = `stripe_inactive (status: ${subscriptions.data[0]?.status || 'none'})`;
                             }
                         }
                     } catch (stripeErr) {
                         console.error(`[SUBS] Stripe error for user ${user.id}:`, stripeErr.message);
                         // Safely keep premium if Stripe is unreachable to avoid accidental lock-outs
                         shouldBePremium = true;
-                        reason = 'stripe_error_fallback';
+                        reason = 'stripe_api_error_fallback';
                     }
                 } else {
                     // No Stripe ID, no Gift flag, no future expiry date...
                     shouldBePremium = false;
-                    reason = 'no_active_plan_found';
+                    reason = 'no_active_plan_evidence';
                 }
 
                 if (!shouldBePremium) {
