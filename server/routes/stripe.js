@@ -178,12 +178,26 @@ router.get('/verify-session', authenticateToken, async (req, res) => {
                 }
             }
 
-            console.log(`Updating DB for user ${req.user.id}: Plan=${planType}, CustomerID=${customerId}`);
+            let premiumUntil = null;
+            const now = new Date();
+
+            if (planType === 'annual') {
+                now.setFullYear(now.getFullYear() + 1);
+                premiumUntil = now.toISOString();
+            } else if (planType === 'monthly') {
+                // For monthly, we normally rely on Stripe, but setting a 31-day window 
+                // acts as a safety buffer for the cron job.
+                now.setMonth(now.getMonth() + 1);
+                now.setDate(now.getDate() + 1); // Extra day safety
+                premiumUntil = now.toISOString();
+            }
+
+            console.log(`Updating DB for user ${req.user.id}: Plan=${planType}, CustomerID=${customerId}, Until=${premiumUntil}`);
 
             await new Promise((resolve, reject) => {
                 pool.run(
-                    `UPDATE users SET is_premium = 1, subscription_plan = ?, trial_until = ?, stripe_customer_id = ?, has_used_trial = 1 WHERE id = ?`,
-                    [planType, trialUntil, customerId, req.user.id],
+                    `UPDATE users SET is_premium = 1, subscription_plan = ?, trial_until = ?, premium_until = ?, stripe_customer_id = ?, has_used_trial = 1 WHERE id = ?`,
+                    [planType, trialUntil, premiumUntil, customerId, req.user.id],
                     (err) => {
                         if (err) reject(err);
                         else resolve();

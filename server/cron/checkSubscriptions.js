@@ -8,6 +8,8 @@ dotenv.config({ path: 'server/.env' });
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+import { logEvent } from '../utils/logger.js';
+
 export const checkSubscriptions = async () => {
     console.log('🔄 Checking subscription status with Stripe...');
 
@@ -32,7 +34,9 @@ export const checkSubscriptions = async () => {
 
                 // 1. Basic flags
                 const isGift = user.is_gift === 1 || user.is_gift === true || String(user.is_gift) === "1";
-                const isLifetime = user.subscription_plan === 'lifetime' || user.subscription_plan === 'gift_lifetime' || user.subscription_plan === 'gift';
+                const isLifetime = user.subscription_plan === 'lifetime' || 
+                                 user.subscription_plan === 'gift_lifetime' || 
+                                 user.subscription_plan === 'gift';
 
                 // 2. Evaluation Logic (Ordered by precedence)
                 
@@ -41,7 +45,7 @@ export const checkSubscriptions = async () => {
                     shouldBePremium = true;
                     reason = 'lifetime_plan';
                 } 
-                // B. Gift flag is generally absolute protection (legacy/manual)
+                // B. Gift flag is absolute protection
                 else if (isGift) {
                     shouldBePremium = true;
                     reason = 'gift_flag';
@@ -62,7 +66,7 @@ export const checkSubscriptions = async () => {
                         const subscriptions = await stripe.subscriptions.list({
                             customer: user.stripe_customer_id,
                             status: 'all', 
-                            limit: 5 // Check more to be safe
+                            limit: 5 
                         });
 
                         const activeSub = subscriptions.data.find(sub =>
@@ -73,7 +77,17 @@ export const checkSubscriptions = async () => {
                             shouldBePremium = true;
                             reason = `stripe_active (${activeSub.status})`;
                         } else {
-                            reason = `stripe_inactive (${subscriptions.data[0]?.status || 'none'})`;
+                            // If user was NOT a gift and NOT manually extended, and Stripe says inactive...
+                            if (user.subscription_plan === 'annual') {
+                                // Annual plans are often one-off payments (mode: payment)
+                                // We keep them premium and rely on the premium_until date (which we now set in stripe.js)
+                                // If premium_until is missing (legacy), we err on the side of caution.
+                                shouldBePremium = true;
+                                reason = 'stripe_annual_payment_assumed_active';
+                            } else {
+                                shouldBePremium = false; 
+                                reason = `stripe_inactive (${subscriptions.data[0]?.status || 'none'})`;
+                            }
                         }
                     } catch (stripeErr) {
                         console.error(`[SUBS] Stripe error for user ${user.id}:`, stripeErr.message);
@@ -81,6 +95,10 @@ export const checkSubscriptions = async () => {
                         shouldBePremium = true;
                         reason = 'stripe_error_fallback';
                     }
+                } else {
+                    // No Stripe ID, no Gift flag, no future expiry date...
+                    shouldBePremium = false;
+                    reason = 'no_active_plan_found';
                 }
 
                 if (!shouldBePremium) {
@@ -93,8 +111,11 @@ export const checkSubscriptions = async () => {
                             (err) => err ? reject(err) : resolve()
                         );
                     });
+
+                    // Log to Audit Logs
+                    logEvent('SUBSCRIPTION_DOWNGRADE', `Automated downgrade to Free. Logic: ${reason}`, user.id);
                 } else {
-                    console.log(`✨ [SUBS] User ${user.id} remains Premium. Reason: ${reason}`);
+                    console.log(`✨ [SUBS] User ${user.id} remains Premium. Logic: ${reason}`);
                 }
 
             } catch (error) {

@@ -342,6 +342,7 @@ router.put('/user/:id/subscription', (req, res) => {
                 is_premium = 1;
                 subscription_plan = 'lifetime';
                 is_gift = 1;
+                premium_until = '2036-01-01T00:00:00.000Z'; // Manual safety for lifetime gifts
                 if (!subscription_started_at) subscription_started_at = now.toISOString();
                 break;
             case 'gift_annual':
@@ -364,8 +365,9 @@ router.put('/user/:id/subscription', (req, res) => {
             // Legacy/Generic Gift fallback
             case 'gift':
                 is_premium = 1;
-                subscription_plan = 'lifetime'; // Default to lifetime if generic
+                subscription_plan = 'lifetime'; 
                 is_gift = 1;
+                premium_until = '2036-01-01T00:00:00.000Z';
                 if (!subscription_started_at) subscription_started_at = now.toISOString();
                 break;
 
@@ -387,6 +389,11 @@ router.put('/user/:id/subscription', (req, res) => {
 
         db.run(sql, [is_premium, subscription_plan, premium_until, trial_until, subscription_started_at, is_gift, id], function (err) {
             if (err) return res.status(500).json({ error: err.message });
+            
+            // Log the manual change
+            const logMsg = `Admin ${req.user.id} updated user ${id} subscription to: ${type} (Plan: ${subscription_plan}, Gift: ${is_gift})`;
+            logEvent('ADMIN_SUBSCRIPTION_UPDATE', logMsg, id, req);
+
             res.json({
                 message: 'Subscription updated',
                 user: { is_premium, subscription_plan, premium_until, trial_until, subscription_started_at, is_gift }
