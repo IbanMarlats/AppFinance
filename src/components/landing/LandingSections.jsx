@@ -54,7 +54,7 @@ export const Hero = ({ onCtaClick }) => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-16">
         <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6 leading-[1.2]">
-          Arrêtez de deviner, commencez à <span className="text-indigo-600">piloter</span> votre micro-entreprise.
+          Sachez exactement ce que vous gagnez <span className="text-indigo-600">vraiment</span>.
         </h1>
         <p className="max-w-3xl mx-auto text-lg text-slate-600 mb-8 leading-relaxed">
           L'outil de gestion qui calcule vos marges réelles, anticipe vos charges URSSAF et surveille vos seuils de TVA. Gérez vos revenus, dépenses, objectifs et récapitulatifs mensuels avec des statistiques détaillées. Conçu pour les freelances et les e-commerçants.
