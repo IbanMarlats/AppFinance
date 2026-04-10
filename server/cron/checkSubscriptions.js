@@ -41,27 +41,22 @@ export const checkSubscriptions = async () => {
 
                 // 2. Evaluation Logic (Ordered by precedence)
                 
-                // A. Lifetime is absolute protection
-                if (isLifetime) {
+                // A. Lifetime or Gift flag are ABSOLUTE protections
+                if (isLifetime || isGift) {
                     shouldBePremium = true;
-                    reason = `LIFETIME_PROTECTED (${user.subscription_plan})`;
+                    reason = isLifetime ? `LIFETIME_PROTECTED (${user.subscription_plan})` : 'GIFT_FLAG_PROTECTED';
                 } 
-                // B. Gift flag is absolute protection
-                else if (isGift) {
-                    shouldBePremium = true;
-                    reason = 'GIFT_FLAG_PROTECTED';
-                }
-                // C. Manual expiry date (Primary manual override)
+                // B. Manual expiry date (Primary manual override)
                 else if (user.premium_until && new Date(user.premium_until) > now) {
                     shouldBePremium = true;
                     reason = `MANUAL_EXPIRY_FUTURE (until ${user.premium_until})`;
                 }
-                // D. Trial period
+                // C. Trial period
                 else if (user.trial_until && new Date(user.trial_until) > now) {
                     shouldBePremium = true;
                     reason = `TRIAL_ACTIVE (until ${user.trial_until})`;
                 }
-                    // E. Stripe Check (Last resort for payment-based plans)
+                // D. Stripe Check (Last resort for payment-based plans)
                 else if (user.stripe_customer_id) {
                     try {
                         const subscriptions = await stripe.subscriptions.list({
@@ -80,7 +75,9 @@ export const checkSubscriptions = async () => {
                         } else {
                             // EXTRA SAFETY: Even if Stripe says inactive, if they have a recognized plan string 
                             // we stay premium if premium_until is missing or in future.
-                            if (['annual', 'lifetime', 'monthly', 'premium'].includes(user.subscription_plan)) {
+                            // We add 'premium_restored' to this list for absolute safety.
+                            const recognizedPlans = ['annual', 'lifetime', 'monthly', 'premium', 'premium_restored'];
+                            if (recognizedPlans.includes(user.subscription_plan)) {
                                 if (!user.premium_until || new Date(user.premium_until) > now) {
                                     shouldBePremium = true;
                                     reason = `STRIPE_INACTIVE_BUT_PLAN_PROTECTED (${user.subscription_plan})`;
@@ -101,8 +98,8 @@ export const checkSubscriptions = async () => {
                     }
                 } else {
                     // No Stripe ID, no Gift flag, no future expiry date...
-                    // In this case, we keep them premium but log it as UNKNOWN_ORIGIN.
-                    // We ONLY downgrade if we have EXPLICIT historical dates that are in the past.
+                    // In this case, we keep them premium but log it as UNKNOWN_ORIGIN if they are already premium
+                    // to avoid accidental loss. We ONLY downgrade if we have EXPLICIT historical dates that are in the past.
                     
                     if (user.premium_until && new Date(user.premium_until) <= now) {
                         shouldBePremium = false;
