@@ -213,6 +213,8 @@ router.put('/user/:id/subscription', (req, res) => {
             case 'lifetime':
                 is_premium = 1;
                 subscription_plan = 'lifetime';
+                is_gift = 1; // Protect manual grants
+                premium_until = '2036-01-01T00:00:00.000Z';
                 if (!subscription_started_at) subscription_started_at = now.toISOString();
                 break;
             case 'annual':
@@ -236,8 +238,8 @@ router.put('/user/:id/subscription', (req, res) => {
                 subscription_plan = 'trial';
                 now.setDate(now.getDate() + 14);
                 premium_until = now.toISOString();
-                trial_until = now.toISOString(); // Set new trial end date
-                is_gift = 0; // Trial is not a 'gift' in the sense of a granted plan
+                trial_until = now.toISOString(); 
+                is_gift = 0; 
                 break;
 
             // Gift Types (Granular)
@@ -245,7 +247,7 @@ router.put('/user/:id/subscription', (req, res) => {
                 is_premium = 1;
                 subscription_plan = 'lifetime';
                 is_gift = 1;
-                premium_until = '2036-01-01T00:00:00.000Z'; // Manual safety for lifetime gifts
+                premium_until = '2036-01-01T00:00:00.000Z'; 
                 if (!subscription_started_at) subscription_started_at = now.toISOString();
                 break;
             case 'gift_annual':

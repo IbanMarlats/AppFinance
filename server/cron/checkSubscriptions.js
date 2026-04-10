@@ -33,34 +33,35 @@ export const checkSubscriptions = async () => {
                 const now = new Date();
 
                 // 1. Basic flags
-                const isGift = user.is_gift === 1 || user.is_gift === true || String(user.is_gift) === "1";
+                const isGift = Boolean(user.is_gift) || user.is_gift === 1 || String(user.is_gift) === "1";
                 const isLifetime = user.subscription_plan === 'lifetime' || 
                                  user.subscription_plan === 'gift_lifetime' || 
-                                 user.subscription_plan === 'gift';
+                                 user.subscription_plan === 'gift' ||
+                                 user.subscription_plan === 'premium_lifetime';
 
                 // 2. Evaluation Logic (Ordered by precedence)
                 
                 // A. Lifetime is absolute protection
                 if (isLifetime) {
                     shouldBePremium = true;
-                    reason = `lifetime_plan (${user.subscription_plan})`;
+                    reason = `LIFETIME_PROTECTED (${user.subscription_plan})`;
                 } 
                 // B. Gift flag is absolute protection
                 else if (isGift) {
                     shouldBePremium = true;
-                    reason = 'gift_flag_active';
+                    reason = 'GIFT_FLAG_PROTECTED';
                 }
                 // C. Manual expiry date (Primary manual override)
                 else if (user.premium_until && new Date(user.premium_until) > now) {
                     shouldBePremium = true;
-                    reason = `manual_extension_active (until ${user.premium_until})`;
+                    reason = `MANUAL_EXPIRY_FUTURE (until ${user.premium_until})`;
                 }
                 // D. Trial period
                 else if (user.trial_until && new Date(user.trial_until) > now) {
                     shouldBePremium = true;
-                    reason = `active_trial (until ${user.trial_until})`;
+                    reason = `TRIAL_ACTIVE (until ${user.trial_until})`;
                 }
-                // E. Stripe Check (Last resort for payment-based plans)
+                    // E. Stripe Check (Last resort for payment-based plans)
                 else if (user.stripe_customer_id) {
                     try {
                         const subscriptions = await stripe.subscriptions.list({
@@ -75,30 +76,46 @@ export const checkSubscriptions = async () => {
 
                         if (activeSub) {
                             shouldBePremium = true;
-                            reason = `stripe_active (${activeSub.status})`;
+                            reason = `STRIPE_CHECK_SUCCESS (${activeSub.status})`;
                         } else {
-                            // EXTRA SAFETY: Even if Stripe says inactive, if they have an 'annual' plan string 
-                            // we might want to respect it if it was recent, but premium_until (check C) 
-                            // should have caught it if it was a manual grant.
-                            // If they are purely Stripe-managed and Stripe says inactive...
-                            if (user.subscription_plan === 'annual' || user.subscription_plan === 'lifetime') {
-                                shouldBePremium = true;
-                                reason = `stripe_inactive_but_protected_plan (${user.subscription_plan})`;
+                            // EXTRA SAFETY: Even if Stripe says inactive, if they have a recognized plan string 
+                            // we stay premium if premium_until is missing or in future.
+                            if (['annual', 'lifetime', 'monthly', 'premium'].includes(user.subscription_plan)) {
+                                if (!user.premium_until || new Date(user.premium_until) > now) {
+                                    shouldBePremium = true;
+                                    reason = `STRIPE_INACTIVE_BUT_PLAN_PROTECTED (${user.subscription_plan})`;
+                                } else {
+                                    shouldBePremium = false;
+                                    reason = `STRIPE_INACTIVE_AND_MANUAL_EXPIRED (expired at ${user.premium_until})`;
+                                }
                             } else {
+                                // If no recognizable plan and Stripe says inactive, downgrade.
                                 shouldBePremium = false; 
-                                reason = `stripe_inactive (status: ${subscriptions.data[0]?.status || 'none'})`;
+                                reason = `STRIPE_INACTIVE (last_status: ${subscriptions.data[0]?.status || 'none'}, plan: ${user.subscription_plan || 'none'})`;
                             }
                         }
                     } catch (stripeErr) {
                         console.error(`[SUBS] Stripe error for user ${user.id}:`, stripeErr.message);
-                        // Safely keep premium if Stripe is unreachable to avoid accidental lock-outs
                         shouldBePremium = true;
-                        reason = 'stripe_api_error_fallback';
+                        reason = 'STRIPE_API_ERROR_FALLBACK';
                     }
                 } else {
                     // No Stripe ID, no Gift flag, no future expiry date...
-                    shouldBePremium = false;
-                    reason = 'no_active_plan_evidence';
+                    // In this case, we keep them premium but log it as UNKNOWN_ORIGIN.
+                    // We ONLY downgrade if we have EXPLICIT historical dates that are in the past.
+                    
+                    if (user.premium_until && new Date(user.premium_until) <= now) {
+                        shouldBePremium = false;
+                        reason = `EXPIRED_MANUAL_DATE (expired at ${user.premium_until})`;
+                    } else if (user.trial_until && new Date(user.trial_until) <= now) {
+                        shouldBePremium = false;
+                        reason = `EXPIRED_TRIAL (expired at ${user.trial_until})`;
+                    } else {
+                        // If they are here, they are is_premium=1 but we have no evidence of why or when it expires.
+                        // We KEEP them to avoid accidental loss.
+                        shouldBePremium = true;
+                        reason = 'PREVENTIVE_RETENTION (Already Premium, no evidence of expiration)';
+                    }
                 }
 
                 if (!shouldBePremium) {
@@ -115,7 +132,11 @@ export const checkSubscriptions = async () => {
                     // Log to Audit Logs
                     logEvent('SUBSCRIPTION_DOWNGRADE', `Automated downgrade to Free. Logic: ${reason}`, user.id);
                 } else {
-                    console.log(`✨ [SUBS] User ${user.id} remains Premium. Logic: ${reason}`);
+                    // Only log if it's not a standard protection we see every day, 
+                    // or if it was a mystery protection so we can audit later.
+                    if (reason.includes('UNKNOWN') || reason.includes('FALLBACK')) {
+                        console.log(`✨ [SUBS] User ${user.id} remains Premium (SAFETY). Reason: ${reason}`);
+                    }
                 }
 
             } catch (error) {
